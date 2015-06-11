@@ -1,6 +1,6 @@
 // Update these
 var postUrl = "/click";
-var listenUrl = "/streazm";
+var listenUrl = "/stream";
 
 // Idk what the service will send back, but could look like this - delete when done
 var fakeTestData = {
@@ -21,7 +21,8 @@ $(document).ready(function () {
 // http://flask.pocoo.org/snippets/116/
 var eventSource = new EventSource(listenUrl);
 eventSource.onmessage = function (e) {
-    updatePage(e.data);
+    updatePage(JSON.parse(e.data));
+    $("#log").html(e.data);
 };
 
 // Sends request to server to open/close door (presumes that server knows the door's state)
@@ -37,6 +38,6 @@ function handleFail() {
 
 function updatePage(data) {
     $("[data-door-open]").attr("data-door-open", data.mag);
-    $("#last-mag").val(data.last_mag);
-    $("#last-pir").val(data.last_pir);
+    $("#last-mag").html(data.times.last_mag);
+    $("#last-pir").html(data.times.last_pir);
 }

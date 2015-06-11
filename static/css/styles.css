@@ -1,5 +1,5 @@
 body {
-    font-size: 6vmin;
+    font-size: 4vmin;
     font-family: sans-serif;
     color: #333;
 }
@@ -7,7 +7,7 @@ body {
 button {
     width: 40vw;
     height: 40vw;
-    border: 2px solid #333;
+    border: 1px solid #333;
     background-color: #DDD;
     border-radius: 50%;
     margin: 10vh auto 0;
@@ -39,14 +39,14 @@ div {
 }
 
 label {
-    float: left;
+    float: left;    
 }
 
 input {
     font-size: inherit;
     background-color: white;
     text-align: center;
-    border: 2px solid #333;
+    border: 1px solid #333;
     width: 33vw;
     float: right;
     color: inherit;

@@ -7,15 +7,15 @@ app = Flask(__name__, static_folder='../static', static_url_path='/static')
 @app.route('/')
 def index():
     return render_template('index.html')
-    
+
 @app.route('/dan/')
 def index2():
     return render_template('index2.html')
-    
+
 @app.route('/click')
 def click():
     print 'CLiCK!'
-    
+
 @app.route('/stream')
 def stream():
     return Response(gen(), mimetype='text/event-stream')
@@ -28,10 +28,10 @@ def gen():
     'times':
     {
         'now':time.time(),
-        'last_pir':25,
-        'last_mag':5
-    }, 
-    'pir':False, 
+        'last_pir':"25 min",
+        'last_mag':"5 min"
+    },
+    'pir':False,
     'mag':True
 }))
         time.sleep(5)

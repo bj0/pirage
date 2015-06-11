@@ -1,18 +1,30 @@
+@mixin vertical-align {
+  position: relative;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+
 table {
-    width: 50%; 
-    margin-left: auto; 
+    width: 50%;
+    margin-left: auto;
     margin-right: auto;
 }
 td { text-align: center; }
 
 .center { display: block; margin-left: auto; margin-right: auto;}
-.tcenter { text-align: center;}
+.tcenter {
+  /*@include vertical-align;*/
+  /*padding: 1em;*/
+  text-align: center;
+  }
 
 
 .pure-round {
     padding: 0;
-    height: 120px;
-    width: 120px;
+    height: 220px;
+    width: 220px;
     border-radius: 50%;
 }
 
@@ -25,7 +37,7 @@ td { text-align: center; }
     padding: 1em;
     border: 1px solid rgba(0,0,0,.2);
 }
-.tcenter { 
+.tcenter {
     padding: 1em;
 }
 
@@ -39,3 +51,22 @@ input {
     color: inherit;
 }
 
+.visible_open,
+.visible_closed {
+    display: none;
+}
+
+[data-door-open=true] > .visible_open {
+    display: initial;
+}
+
+[data-door-open=false] > .visible_closed {
+    display: initial;
+}
+
+label {
+  text-align: center;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
