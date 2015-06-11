@@ -1,0 +1,41 @@
+table {
+    width: 50%; 
+    margin-left: auto; 
+    margin-right: auto;
+}
+td { text-align: center; }
+
+.center { display: block; margin-left: auto; margin-right: auto;}
+.tcenter { text-align: center;}
+
+
+.pure-round {
+    padding: 0;
+    height: 120px;
+    width: 120px;
+    border-radius: 50%;
+}
+
+.pure-g > div {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+.l-box {
+    padding: 1em;
+    border: 1px solid rgba(0,0,0,.2);
+}
+.tcenter { 
+    padding: 1em;
+}
+
+input {
+    font-size: inherit;
+    background-color: white;
+    text-align: center;
+    border: 2px solid #333;
+    width: 33vw;
+    float: right;
+    color: inherit;
+}
+

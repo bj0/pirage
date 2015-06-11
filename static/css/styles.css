@@ -1,0 +1,57 @@
+body {
+    font-size: 6vmin;
+    font-family: sans-serif;
+    color: #333;
+}
+
+button {
+    width: 40vw;
+    height: 40vw;
+    border: 2px solid #333;
+    background-color: #DDD;
+    border-radius: 50%;
+    margin: 10vh auto 0;
+    display: block;
+    cursor: pointer;
+    font-size: inherit;
+    text-transform: uppercase;
+    max-height: 40vh;
+    max-width: 40vh;
+    color: inherit;
+}
+.VisibleOpen,
+.VisibleClosed {
+    display: none;
+}
+
+[data-door-open=true] .VisibleOpen,
+.VisibleOpen[data-door-open=true] {
+    display: initial;
+}
+[data-door-open=false] .VisibleClosed,
+.VisibleClosed[data-door-open=false] {
+    display: initial;
+}
+
+div {
+    text-align: center;
+    padding: 1.25em 1.5em 0;
+}
+
+label {
+    float: left;
+}
+
+input {
+    font-size: inherit;
+    background-color: white;
+    text-align: center;
+    border: 2px solid #333;
+    width: 33vw;
+    float: right;
+    color: inherit;
+}
+
+span {
+    text-transform: uppercase;
+}

@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Garage Door Controller</title>
+
+    <script src="/static/js/jquery-2.1.4.min.js"></script>
+    <script src="/static/js/script.js"></script>
+
+    <link href="/static/css/styles.css" rel="stylesheet" />
+</head>
+<body>
+    <button data-door-open="">
+        <span class="VisibleOpen">Close</span>
+        <span class="VisibleClosed">Open</span>
+    </button>
+    <div>
+        <label data-door-open="">
+            <span class="VisibleOpen">Open</span>
+            <span class="VisibleClosed">Closed</span>
+            for:
+        </label>
+        <input type="text" id="last-mag" readonly>
+    </div>
+    <div>
+    </div>
+    <div>
+        <label>
+            Last Movement:
+        </label>
+        <input type="text" id="last-pir" value="" readonly>
+    </div>
+</body>
+</html>
