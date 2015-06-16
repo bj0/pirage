@@ -38,4 +38,8 @@ def gen():
 
 
 if __name__ == '__main__':
+
+    #TODO start hardware monitoring
+    #TODO start history/triggers watching
+
     app.run(debug=True, threaded=True)
