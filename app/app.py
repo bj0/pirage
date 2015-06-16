@@ -12,6 +12,12 @@ def create_app():
     app = Flask(__name__, static_folder='../static', static_url_path='/static')
     app._q = Queue()
 
+    #TODO start hardware monitoring
+    #TODO start history/triggers watching
+
+    # spawns fake data greenlet
+    spawn(gen)
+
     return app
 
 app = create_app()
@@ -46,7 +52,7 @@ def gen():
     while True:
         app._q.put({
             'times': {
-                'now':time.time(),
+                'now':int(time.time()),
                 'last_pir':"{} min".format(random.randint(1,25)),
                 'last_mag':"{} min".format(random.randint(1,7 ))
                 },
@@ -57,9 +63,5 @@ def gen():
 
 
 if __name__ == '__main__':
-
-    #TODO start hardware monitoring
-    #TODO start history/triggers watching
-    spawn(gen)
     #app.run(port=8245, debug=True, threaded=False)
     WSGIServer(('',8245), app).serve_forever()

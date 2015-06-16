@@ -62,6 +62,8 @@ class Monitor:
         self.running = None
         self._current = None
 
+        self.read_interval = 1 # 1 second
+
         # set number scheme
         io.setmode(io.BCM)
 
@@ -74,7 +76,10 @@ class Monitor:
         Start monitoring sensors.
         '''
         if self.running is None:
-            self.running = async(self._run())
+            self.running = async(self.run())
+
+        # return the task so it can be watched
+        return self.running
 
     def stop(self):
         '''
@@ -86,21 +91,30 @@ class Monitor:
 
     #@threaded
     @coroutine
-    def _run(self):
+    def run(self):
+        '''
+        Read the sensors every interval and publish any changes.  Runs until canceled.
+
+        This is a @coroutine
+        '''
+
         while self.running:
             # read current sensors
             state = self._read_sensors()
-            if self._current is None or self._current.mag != state.mag or \
+
+            if self._current is None:
+                self._current = AttrDict(mag=None, pir=None)
+
+            if self._current.mag != state.mag or \
                 self._current.pir != state.pir:
-                if self._current is None:
-                    self._current = AttrDict()
+
                 # something changed
                 self._current.pir = state.pir
                 self._current.mag = state.mag
-                self.publish(dict(self._current))
+                self.publish(self._current)
 
             # pause
-            yield from sleep(1)
+            yield from sleep(self.read_interval)
 
         # monitoring stopped
         self._current = None
