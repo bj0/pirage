@@ -6,15 +6,17 @@ var listenUrl = "/stream";
 var fakeTestData = {
     mag: true,
     pir: false,
-    last_mag: "6 min",
-    last_pir: "12:04 AM"
+    times: {
+      last_mag: "6 min",
+      last_pir: "12:04 AM"
+    }
 }
 
 $(document).ready(function () {
 
     updatePage(fakeTestData); // Loading test, remove me when done
 
-    $("button").on("click", toggleDoor);
+    $("#button").on("click", toggleDoor);
 });
 
 // No idea if this works, nor how to test it
@@ -27,7 +29,9 @@ eventSource.onmessage = function (e) {
 
 // Sends request to server to open/close door (presumes that server knows the door's state)
 function toggleDoor() {
-    $.post(postUrl).fail(handleFail);
+    $.post(postUrl,"").done(function(x) {
+        alert("done!");
+    }).fail(handleFail);
 }
 
 function handleFail() {
