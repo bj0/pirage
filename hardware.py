@@ -24,14 +24,20 @@ They can be checked like so::
     if io.input(mag_pin):
         print("MAG ACTIVE")
 
+GPIO pins used are:
+    18 - PIR
+    23 - mag
+    24 - relay
+
 author:: Brian Parma <execrable@gmail.com>
 '''
 
 from asyncio import coroutine, async, sleep
 import RPi.GPIO as io
 
-_pir_pin = #TODO
-_mag_pin = #TODO
+_pir_pin = 18
+_mag_pin = 23
+_relay_pin = 24
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -62,7 +68,7 @@ class Monitor:
         self.running = None
         self._current = None
 
-        self.read_interval = 1 # 1 second
+        self.read_interval = 2 # 2 second
 
         # set number scheme
         io.setmode(io.BCM)
@@ -70,6 +76,7 @@ class Monitor:
         # init pins
         io.setup(_pir_pin, io.IN)
         io.setup(_mag_pin, io.IN, pull_up_down=io.PUD_UP)
+        io.setup(_relay_pin, io.OUT)
 
     def start(self):
         '''
@@ -138,5 +145,22 @@ class Monitor:
         for cb in self._callbacks:
             cb(*args, **kwargs)
 
+    @coroutine
+    def toggle_relay(self):
+        '''
+        Flip the relay on for 0.5s to simulate a "button press"
+        '''
+        io.output(io.HIGH)
+        yield return sleep(0.5)
+        io.output(io.LOW)
+
     def _read_sensors(self):
-        #TODO
+        state = AttrDict()
+        state.pir = io.input(_pir_pin)
+        state.mag = io.input(_mag_pin)
+
+        return state
+
+if __name__ == '__main__':
+    # run stand alone to interactively test the hardware interaction
+    
