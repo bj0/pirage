@@ -83,6 +83,7 @@ class Monitor:
         self._callbacks = []
         self.running = None
         self._current = None
+        self._run_task = None
 
         self.read_interval = 2 # 2 second
 
@@ -98,12 +99,11 @@ class Monitor:
         '''
         Start monitoring sensors.
         '''
-        if self.running is None:
-            self.running = spawn(self.run)
-            # self.running = async(self.run())
+        if not self.running:
+            self._run_task = spawn(self.run)
 
         # return the task so it can be watched
-        return self.running
+        return self._run_task
 
     def stop(self):
         '''
@@ -111,8 +111,9 @@ class Monitor:
         '''
         if self.running is not None:
             # self.running.cancel()
-            self.running.kill()
-            self.running = None
+            self.running = False
+            self._run_task.kill()
+            self._run_task = None
 
     #@threaded
     # @coroutine
@@ -123,6 +124,7 @@ class Monitor:
         This is a @coroutine
         '''
 
+        self.running = True
         while self.running:
             # read current sensors
             state = self._read_sensors()

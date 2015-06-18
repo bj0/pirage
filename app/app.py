@@ -57,7 +57,7 @@ def index2():
 
 @app.route('/click', methods=['POST'])
 def click():
-    print('CLiCK!')
+    print('click!')
     return ""
 
 @app.route('/stream')
