@@ -72,15 +72,21 @@ def test_run_fires_callback_on_change(fastsleep, gpio):
     # 3 new calls
     assert len(mm.callback.mock_calls) == 4
 
+def test_relay_starts_low(gpio):
+    from pirage import hardware as hw
+    m = Monitor()
+    gpio.output.assert_called_once_with(hw._relay_pin, gpio.LOW)
+
 def test_toggle_relay(fastsleep, gpio):
     fastsleep('pirage.hardware.sleep')
     from pirage import hardware as hw
 
     m = Monitor()
+    gpio.output.reset_mock()
     # put it in a greenlet so we can step it
     spawn(m.toggle_relay)
     gevent.sleep() # step to pause
 
     gpio.output.assert_called_once_with(hw._relay_pin, gpio.HIGH)
     gevent.sleep() # step
-    gpio.output.assert_called_with(hw._relay_pin, gpio.LOW)    
+    gpio.output.assert_called_with(hw._relay_pin, gpio.LOW)

@@ -94,6 +94,8 @@ class Monitor:
         io.setup(_pir_pin, io.IN)
         io.setup(_mag_pin, io.IN, pull_up_down=io.PUD_UP)
         io.setup(_relay_pin, io.OUT)
+        # make sure relay doesn't click when we start
+        io.output(_relay_pin, io.LOW)
 
     def start(self):
         '''
