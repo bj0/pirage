@@ -13,9 +13,11 @@ from flask import Flask, render_template, Response
 import time
 import json
 
+clients = []
+
 def create_app():
     app = Flask(__name__, static_folder='../static', static_url_path='/static')
-    app._q = Queue()
+    # app._q = Queue()
 
     #TODO start hardware monitoring
     #TODO start history/triggers watching
@@ -29,15 +31,16 @@ def gen():
     '''generate fake data'''
     import random
     while True:
-        app._q.put({
-            'times': {
-                'now':int(time.time()),
-                'last_pir':"{} min".format(random.randint(1,25)),
-                'last_mag':"{} min".format(random.randint(1,7 ))
-                },
-            'pir':False,
-            'mag':True
-            })
+        for q in list(clients):
+            q.put({
+                'times': {
+                    'now':int(time.time()),
+                    'last_pir':"{} min".format(random.randint(1,25)),
+                    'last_mag':"{} min".format(random.randint(1,7 ))
+                    },
+                'pir':False,
+                'mag':True
+                })
         sleep(5)
 
 
@@ -59,14 +62,21 @@ def click():
 
 @app.route('/stream')
 def stream():
-    return Response(get_data(app._q), mimetype='text/event-stream')
+    return Response(get_data(), mimetype='text/event-stream')
 
-def get_data(q):
+def get_data():
     yield 'retry: 10000\n\n'
-    while True:
-        for data in iter(q.get, 'nan'):
-            print('got data:',data)
-            yield 'data: {}\n\n'.format(json.dumps(data))
+    q = Queue()
+    print('add client')
+    clients.append(q)
+    try:
+        while True:
+            for data in iter(q.get, 'nan'):
+                print('got data:',data)
+                yield 'data: {}\n\n'.format(json.dumps(data))
+    finally:
+        print('remove client')
+        clients.remove(q)
 
 if __name__ == '__main__':
     # app.run(port=8245, debug=True)
