@@ -32,8 +32,23 @@ GPIO pins used are:
 author:: Brian Parma <execrable@gmail.com>
 '''
 
-from asyncio import coroutine, async, sleep
-import RPi.GPIO as io
+# from asyncio import coroutine, async, sleep, get_event_loop
+from __future__ import print_function
+from gevent import spawn, sleep
+try:
+    import RPi.GPIO as io
+except:
+    # mock GPIO for running on desktop
+    print('no RPi.GPIO, mocking')
+    from mock import MagicMock
+    from itertools import cycle
+    io = MagicMock()
+    io.HIGH = 1
+    io.LOW = 0
+    io.input = MagicMock()
+    io.input.side_effect = cycle((io.HIGH, io.LOW, io.HIGH, io.LOW, io.LOW))
+    io.output = MagicMock()
+    io.output.side_effect = lambda *x: print('out:',*x)
 
 _pir_pin = 18
 _mag_pin = 23
@@ -41,7 +56,8 @@ _relay_pin = 24
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        # super().__init__(*args, **kwargs)
+        super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
 class Monitor:
@@ -83,7 +99,8 @@ class Monitor:
         Start monitoring sensors.
         '''
         if self.running is None:
-            self.running = async(self.run())
+            self.running = spawn(self.run)
+            # self.running = async(self.run())
 
         # return the task so it can be watched
         return self.running
@@ -93,11 +110,12 @@ class Monitor:
         Stop monitoring sensors.
         '''
         if self.running is not None:
-            self.running.cancel()
+            # self.running.cancel()
+            self.running.kill()
             self.running = None
 
     #@threaded
-    @coroutine
+    # @coroutine
     def run(self):
         '''
         Read the sensors every interval and publish any changes.  Runs until canceled.
@@ -121,7 +139,8 @@ class Monitor:
                 self.publish(self._current)
 
             # pause
-            yield from sleep(self.read_interval)
+            # yield from sleep(self.read_interval)
+            sleep(self.read_interval)
 
         # monitoring stopped
         self._current = None
@@ -145,14 +164,15 @@ class Monitor:
         for cb in self._callbacks:
             cb(*args, **kwargs)
 
-    @coroutine
+    # @coroutine
     def toggle_relay(self):
         '''
         Flip the relay on for 0.5s to simulate a "button press"
         '''
-        io.output(io.HIGH)
-        yield return sleep(0.5)
-        io.output(io.LOW)
+        io.output(_relay_pin, io.HIGH)
+        # yield return sleep(0.5)
+        sleep(0.5)
+        io.output(_relay_pin, io.LOW)
 
     def _read_sensors(self):
         state = AttrDict()
@@ -163,4 +183,30 @@ class Monitor:
 
 if __name__ == '__main__':
     # run stand alone to interactively test the hardware interaction
-    
+    # options:
+    # - gevent with patched raw_input/input (no py3)
+    # - eventlet with aioeventlet (works with py3 and asyncio), what about input?
+    # - pure asyncio? what about input?
+    from gevent import monkey, spawn
+    monkey.patch_sys()
+
+    m = Monitor()
+
+    # this accepts input without blocking gevent
+    def prompt(msg):
+        print(msg)
+        while True:
+            cmd = raw_input().lower()
+            if cmd == 'q':
+                break
+            elif cmd == 'r':
+                m.toggle_relay()
+            else:
+                print('unknown cmd')
+
+    # print on input change
+    m.register(lambda *x: print('pub:',*x))
+    m.start()
+    gt = spawn(prompt("enter q to quit, r to relay"))
+    gt.join()
+    m.stop()

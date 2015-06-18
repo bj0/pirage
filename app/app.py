@@ -3,6 +3,11 @@ from gevent import monkey, sleep, spawn
 from gevent.queue import Queue
 from gevent.pywsgi import WSGIServer
 monkey.patch_all()
+# import eventlet
+# from eventlet import sleep, spawn, wsgi
+# from eventlet.queue import Queue
+# eventlet.monkey_patch()
+
 
 from flask import Flask, render_template, Response
 import time
@@ -20,7 +25,24 @@ def create_app():
 
     return app
 
+def gen():
+    '''generate fake data'''
+    import random
+    while True:
+        app._q.put({
+            'times': {
+                'now':int(time.time()),
+                'last_pir':"{} min".format(random.randint(1,25)),
+                'last_mag':"{} min".format(random.randint(1,7 ))
+                },
+            'pir':False,
+            'mag':True
+            })
+        sleep(5)
+
+
 app = create_app()
+app.debug = True
 
 @app.route('/')
 def index():
@@ -42,26 +64,11 @@ def stream():
 def get_data(q):
     yield 'retry: 10000\n\n'
     while True:
-        for data in q:
+        for data in iter(q.get, 'nan'):
             print('got data:',data)
             yield 'data: {}\n\n'.format(json.dumps(data))
 
-def gen():
-    '''generate fake data'''
-    import random
-    while True:
-        app._q.put({
-            'times': {
-                'now':int(time.time()),
-                'last_pir':"{} min".format(random.randint(1,25)),
-                'last_mag':"{} min".format(random.randint(1,7 ))
-                },
-            'pir':False,
-            'mag':True
-            })
-        sleep(5)
-
-
 if __name__ == '__main__':
-    #app.run(port=8245, debug=True, threaded=False)
+    # app.run(port=8245, debug=True)
     WSGIServer(('',8245), app).serve_forever()
+    # wsgi.server(eventlet.listen(('',8245)), app)
