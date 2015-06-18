@@ -10,6 +10,7 @@ Monitor:
 According to the spec, the PIR sensor's pin is HIGH when there is movement, else low.
 
 The magnetic switch's requires a pull-up resister (internal), and is closed when the magnet is near the switch.
+ * HIGH when magnet is not by switch (OPEN)
 
 They can be checked like so::
 
@@ -20,14 +21,16 @@ They can be checked like so::
     io.setup(door_pin, io.IN, pull_up_down=io.PUD_UP)
 
     if io.input(pir_pin):
-        print("PIR ACTIVE")
+        print("MOVEMENT DETECTED!")
     if io.input(mag_pin):
-        print("MAG ACTIVE")
+        print("MAG OPEN!")
 
 GPIO pins used are:
     18 - PIR
     23 - mag
     24 - relay
+
+The relay module needs to be HIGH at startup or it will activate (it activates when LOW)
 
 author:: Brian Parma <execrable@gmail.com>
 '''
@@ -95,7 +98,7 @@ class Monitor:
         io.setup(_mag_pin, io.IN, pull_up_down=io.PUD_UP)
         io.setup(_relay_pin, io.OUT)
         # make sure relay doesn't click when we start
-        io.output(_relay_pin, io.LOW)
+        io.output(_relay_pin, io.HIGH)
 
     def start(self):
         '''
@@ -173,10 +176,10 @@ class Monitor:
         '''
         Flip the relay on for 0.5s to simulate a "button press"
         '''
-        io.output(_relay_pin, io.HIGH)
+        io.output(_relay_pin, io.LOW)
         # yield return sleep(0.5)
         sleep(0.5)
-        io.output(_relay_pin, io.LOW)
+        io.output(_relay_pin, io.HIGH)
 
     def _read_sensors(self):
         state = AttrDict()

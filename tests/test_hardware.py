@@ -75,7 +75,7 @@ def test_run_fires_callback_on_change(fastsleep, gpio):
 def test_relay_starts_low(gpio):
     from pirage import hardware as hw
     m = Monitor()
-    gpio.output.assert_called_once_with(hw._relay_pin, gpio.LOW)
+    gpio.output.assert_called_once_with(hw._relay_pin, gpio.HIGH)
 
 def test_toggle_relay(fastsleep, gpio):
     fastsleep('pirage.hardware.sleep')
@@ -87,6 +87,6 @@ def test_toggle_relay(fastsleep, gpio):
     spawn(m.toggle_relay)
     gevent.sleep() # step to pause
 
-    gpio.output.assert_called_once_with(hw._relay_pin, gpio.HIGH)
+    gpio.output.assert_called_once_with(hw._relay_pin, gpio.LOW)
     gevent.sleep() # step
-    gpio.output.assert_called_with(hw._relay_pin, gpio.LOW)
+    gpio.output.assert_called_with(hw._relay_pin, gpio.HIGH)

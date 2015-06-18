@@ -7,8 +7,8 @@ var fakeTestData = {
     mag: true,
     pir: false,
     times: {
-      last_mag: "6 min",
-      last_pir: "12:04 AM"
+      last_mag: "None",
+      last_pir: "None"
     }
 }
 
