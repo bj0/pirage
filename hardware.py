@@ -8,6 +8,7 @@ Monitor:
     Monitor pins on the rpi for changes from a PIR sensors and a magnetic switch sensor.
 
 According to the spec, the PIR sensor's pin is HIGH when there is movement, else low.
+ * HIGH when there is movement
 
 The magnetic switch's requires a pull-up resister (internal), and is closed when the magnet is near the switch.
  * HIGH when magnet is not by switch (OPEN)
@@ -31,6 +32,7 @@ GPIO pins used are:
     24 - relay
 
 The relay module needs to be HIGH at startup or it will activate (it activates when LOW)
+ * HIGH -> LOW to activate
 
 author:: Brian Parma <execrable@gmail.com>
 '''
@@ -48,6 +50,8 @@ except:
     io = MagicMock()
     io.HIGH = 1
     io.LOW = 0
+    io.OUT = 0
+    io.IN = 1
     io.input = MagicMock()
     io.input.side_effect = cycle((io.HIGH, io.LOW, io.HIGH, io.LOW, io.LOW))
     io.output = MagicMock()
@@ -96,9 +100,9 @@ class Monitor:
         # init pins
         io.setup(_pir_pin, io.IN)
         io.setup(_mag_pin, io.IN, pull_up_down=io.PUD_UP)
-        io.setup(_relay_pin, io.OUT)
+        io.setup(_relay_pin, io.OUT, initial=io.HIGH)
         # make sure relay doesn't click when we start
-        io.output(_relay_pin, io.HIGH)
+        # io.output(_relay_pin, io.HIGH)
 
     def start(self):
         '''

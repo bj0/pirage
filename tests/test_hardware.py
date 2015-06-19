@@ -22,6 +22,8 @@ def gpio(monkeypatch):
     io = MagicMock()
     io.HIGH = 1
     io.LOW = 0
+    io.OUT = 0
+    io.IN = 1
 
     monkeypatch.setattr('pirage.hardware.io', io)
 
@@ -72,10 +74,11 @@ def test_run_fires_callback_on_change(fastsleep, gpio):
     # 3 new calls
     assert len(mm.callback.mock_calls) == 4
 
-def test_relay_starts_low(gpio):
+def test_relay_starts_high(gpio):
     from pirage import hardware as hw
     m = Monitor()
-    gpio.output.assert_called_once_with(hw._relay_pin, gpio.HIGH)
+    # gpio.output.assert_called_once_with(hw._relay_pin, gpio.HIGH)
+    gpio.setup.assert_called_with(hw._relay_pin, gpio.OUT, initial=gpio.HIGH)
 
 def test_toggle_relay(fastsleep, gpio):
     fastsleep('pirage.hardware.sleep')
