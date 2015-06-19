@@ -10,9 +10,9 @@ class Garage:
 
     def __init__(self, toggle_function):
         self.door_open = False
-        self.pir = False
-        self.last_door = None
-        self.last_pir = None
+        self.motion = False
+        self.last_door_open = None
+        self.last_motion = None
         self.locked = False
 
         self.task = None
@@ -44,17 +44,17 @@ class Garage:
                 notify("door closed!")
 
         # check pir
-        if state.pir and not self.pir:
+        if state.pir and not self.motion:
             # motion!
             notify("motion!")
 
         # save state
-        self.pir = state.pir
+        self.motion = state.pir
         self.door_open = state.mag
-        if self.pir:
-            self.last_pir = time.time()
+        if self.motion:
+            self.last_motion = time.time()
         if self.door_open:
-            self.last_mag = time.time()
+            self.last_door_open = time.time()
 
     def is_someone_home(self):
         pass #TODO
@@ -84,9 +84,9 @@ class Garage:
 
         # if there was movement, we delay
         now = time.time()
-        while (now - self.last_pir) < self.motion_delay:
+        while (now - self.last_motion) < self.motion_delay:
             notify("garage close delayed by movement!")
-            yield from sleep(now - self.last_pir + 5)
+            yield from sleep(now - self.last_motion + 5)
             now = time.time()
 
         # clear task since it can no longer be canceled
@@ -149,7 +149,7 @@ class Garage:
     def notify(self, message):
         message = message.format(
             open="Open" if self.door_open else "Closed",
-            mag_open = (time.time()-self.last_mag)/60 )
+            mag_open = (time.time()-self.last_door_open)/60 )
         print(message)
         #TODO email?
 
