@@ -5,10 +5,10 @@ from asyncio import coroutine, async, sleep
 
 class Garage:
     '''
-    A class to hold and manage the state of the garage.
+    Manage the state of the garage.
     '''
 
-    def __init__(self):
+    def __init__(self, toggle_function):
         self.door_open = False
         self.pir = False
         self.last_door = None
@@ -22,6 +22,8 @@ class Garage:
         self.motion_delay = 5*60 # 5 min
         self.close_delay = 15*60 # 15 min
         self.close_warning = 5*60 # 5 min
+
+        self._toggle = toggle_function
 
     def update(self, state):
         # check door
@@ -152,4 +154,4 @@ class Garage:
         #TODO email?
 
     def toggle_door(self):
-        pass
+        self._toggle()

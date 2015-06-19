@@ -1,2 +1,4 @@
 livereload
 fabric
+mock
+pytest
