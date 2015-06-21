@@ -20,6 +20,7 @@ class Garage:
         self.notify_task = None
 
         self.motion_delay = 5*60 # 5 min
+        self.notify_delay = 6*60 # 6 min
         self.close_delay = 15*60 # 15 min
         self.close_warning = 5*60 # 5 min
 
@@ -30,23 +31,25 @@ class Garage:
         if state.mag != self.door_open:
             if state.mag:
                 # door is now open!
-                notify("door open!")
+                self.notify("door open!")
                 if self.close_task is not None:
                     self.close_task.cancel()
                 self.close_task = async(self.close_after(self.close_delay))
 
                 if self.notify_task is not None:
                     self.notify_task.cancel()
-                self.notify_task = async(self.notify_after("Garage is still open after {mag_open} minutes!", 6*60))
+                self.notify_task = async(self.notify_after(
+                    "Garage is still open after {mag_open} minutes!",
+                    self.notify_delay))
 
             else:
                 # door is now closed!
-                notify("door closed!")
+                self.notify("door closed!")
 
         # check pir
         if state.pir and not self.motion:
             # motion!
-            notify("motion!")
+            self.notify("motion!")
 
         # save state
         self.motion = state.pir
@@ -67,17 +70,17 @@ class Garage:
         '''
         if seconds <= self.close_warning:
             if seconds < 60:
-                notify("closing garage in {} seconds!", seconds)
+                self.notify("closing garage in {} seconds!", seconds)
             else:
-                notify("closing garage in {} minutes!".format(seconds/60))
+                self.notify("closing garage in {} minutes!".format(seconds/60))
         else:
             # warn 5 minutes before close
             yield from sleep(seconds - self.close_warning)
             seconds -= self.close_warning
             if seconds < 60:
-                notify("closing garage in {} seconds!", seconds)
+                self.notify("closing garage in {} seconds!", seconds)
             else:
-                notify("closing garage in {} minutes!".format(seconds/60))
+                self.notify("closing garage in {} minutes!".format(seconds/60))
 
         # wait for time to elapse
         yield from sleep(seconds)
@@ -85,7 +88,7 @@ class Garage:
         # if there was movement, we delay
         now = time.time()
         while (now - self.last_motion) < self.motion_delay:
-            notify("garage close delayed by movement!")
+            self.notify("garage close delayed by movement!")
             yield from sleep(now - self.last_motion + 5)
             now = time.time()
 
@@ -102,49 +105,13 @@ class Garage:
         If @repeat is True, the notification will be sent every @seconds seconds.
         '''
         yield from sleep(seconds)
-        notify(message)
+        self.notify(message)
 
         while repeat:
             yield from sleep(seconds)
-            notify(message)
+            self.notify(message)
 
         self.notify_task = None
-
-    # def start(self):
-    #     '''start managing the garage'''
-    #     if self.task is None:
-    #         print('starting management task')
-    #         self.task = async(self._run())
-    #
-    # def stop(self):
-    #     '''stop managing the garage'''
-    #     if self.task is not None:
-    #         print('stopping management task')
-    #         self.task.cancel()
-    #         self.task = None
-    #
-    # @coroutine
-    # def _run(self):
-    #     while True:
-    #         # TODO notifies
-    #         if self.notify_after is not None and self.notify_after < time.time():
-    #             self.notify("Dat NOTIFY!")
-    #             # repeat notify every 5 minute
-    #             self.notify_after = time.time() + 5*60
-    #
-    #         if self.door_open:
-    #             # if there's currently motion, wait a few seconds and check again
-    #             if self.pir:
-    #                 yield from sleep(10)
-    #                 continue
-    #             # close the door after a certain time if it's not locked open
-    #             # and there is no motion
-    #             if not self.locked and \
-    #                 (self.close_after is not None and self.close_after < time.time()):
-    #                 self.toggle_door()
-    #
-    #         # check again in a minute
-    #         yield from sleep(60)
 
     def notify(self, message):
         message = message.format(

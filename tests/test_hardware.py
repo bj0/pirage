@@ -6,16 +6,9 @@ import pytest
 import gevent
 from gevent import spawn, sleep
 
+from .fastsleep import fastsleep
+
 from pirage.hardware import Monitor
-
-@pytest.fixture
-def fastsleep(monkeypatch):
-    old_sleep = gevent.sleep
-    def patch(module):
-        monkeypatch.setattr(module, lambda *x: old_sleep(0))
-
-    patch('gevent.sleep')
-    return patch
 
 @pytest.fixture(autouse=True)
 def gpio(monkeypatch):
@@ -42,7 +35,7 @@ def test_run_fires_callback_on_start():
 
 def test_run_fires_callback_on_change(fastsleep, gpio):
     from itertools import cycle
-    fastsleep('pirage.hardware.sleep')
+    fastsleep.patch('pirage.hardware.sleep')
 
     # no changes on input
     gpio.input.side_effect = cycle((gpio.HIGH,gpio.LOW))
@@ -81,7 +74,7 @@ def test_relay_starts_high(gpio):
     gpio.setup.assert_called_with(hw._relay_pin, gpio.OUT, initial=gpio.HIGH)
 
 def test_toggle_relay(fastsleep, gpio):
-    fastsleep('pirage.hardware.sleep')
+    fastsleep.patch('pirage.hardware.sleep')
     from pirage import hardware as hw
 
     m = Monitor()
