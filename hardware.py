@@ -57,15 +57,11 @@ except:
     io.output = MagicMock()
     io.output.side_effect = lambda *x: print('out:',*x)
 
+from .util import AttrDict
+
 _pir_pin = 18
 _mag_pin = 23
 _relay_pin = 24
-
-class AttrDict(dict):
-    def __init__(self, *args, **kwargs):
-        # super().__init__(*args, **kwargs)
-        super(AttrDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
 
 class Monitor:
     '''
@@ -89,7 +85,7 @@ class Monitor:
     def __init__(self):
         self._callbacks = []
         self.running = None
-        self._current = None
+        self._current = AttrDict(mag=None, pir=None)
         self._run_task = None
 
         self.read_interval = 2 # 2 second
@@ -138,9 +134,6 @@ class Monitor:
             # read current sensors
             state = self._read_sensors()
 
-            if self._current is None:
-                self._current = AttrDict(mag=None, pir=None)
-
             if self._current.mag != state.mag or \
                 self._current.pir != state.pir:
 
@@ -154,7 +147,7 @@ class Monitor:
             sleep(self.read_interval)
 
         # monitoring stopped
-        self._current = None
+        self._current = AttrDict(mag=None, pir=None)
 
     def register(self, callback):
         '''

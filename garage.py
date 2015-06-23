@@ -29,6 +29,7 @@ class Garage:
 
     def update(self, state):
         # check door
+        state.mag = not state.mag # since the door switch is "closed" when the door is "open"
         if state.mag != self.door_open:
             self.last_door_change = time.time()
             if state.mag:

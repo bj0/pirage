@@ -4,8 +4,7 @@ import pytest
 import gevent
 import mock
 
-
-from pirage.hardware import AttrDict
+from pirage.util import AttrDict
 from pirage.garage import Garage
 from .fastsleep import fastsleep, fancysleep
 
@@ -18,11 +17,13 @@ def test_garage_autoclose(fancysleep, monkeypatch):
     g = Garage(toggle)
     g.notify = notify
     # initial setup
-    g.update(AttrDict(pir=False, mag=False))
+    g.update(AttrDict(pir=False, mag=True))
 
     with fancysleep:
+        gevent.sleep(5)
+        
         # open door
-        g.update(AttrDict(pir=False, mag=True))
+        g.update(AttrDict(pir=False, mag=False))
 
         gevent.sleep(g.close_delay-1)
         assert not toggle.called
@@ -43,19 +44,21 @@ def test_garage_autoclose_delayed_by_motion(fancysleep, monkeypatch):
 
     g = Garage(toggle)
     # initial setup
-    g.update(AttrDict(pir=False, mag=False))
+    g.update(AttrDict(pir=False, mag=True))
 
     with fancysleep:
+        gevent.sleep(5)
+
         # open door
-        g.update(AttrDict(pir=False, mag=True))
+        g.update(AttrDict(pir=False, mag=False))
 
         # advance to 10s before auto-close
         gevent.sleep(g.close_delay-10)
 
         # signal movement
-        g.update(AttrDict(pir=True, mag=True))
+        g.update(AttrDict(pir=True, mag=False))
         gevent.sleep()
-        g.update(AttrDict(pir=False, mag=True))
+        g.update(AttrDict(pir=False, mag=False))
 
         # wait till past previous auto-close
         gevent.sleep(30)
@@ -79,11 +82,13 @@ def test_garage_notify_on_left_open(fancysleep, monkeypatch, pir):
     g.notify = notify
 
     # initial setup
-    g.update(AttrDict(pir=False, mag=False))
+    g.update(AttrDict(pir=False, mag=True))
 
     with fancysleep:
+        gevent.sleep(5)
+
         # open door
-        g.update(AttrDict(pir=pir, mag=True))
+        g.update(AttrDict(pir=pir, mag=False))
 
         gevent.sleep(g.notify_delay-1)
         notify.assert_not_called_with("Garage is still open after {mag_open} minutes!")
@@ -102,7 +107,7 @@ def test_garage_notify_on_motion(fastsleep, monkeypatch, mag):
     g.notify = notify
 
     # initial setup
-    g.update(AttrDict(pir=False, mag=False))
+    g.update(AttrDict(pir=False, mag=True))
 
     # motion
     g.update(AttrDict(pir=True, mag=mag))
@@ -120,10 +125,10 @@ def test_garage_notify_on_door_change(fastsleep, monkeypatch, pir):
     g.notify = notify
 
     # initial setup
-    g.update(AttrDict(pir=False, mag=False))
+    g.update(AttrDict(pir=False, mag=True))
 
     # door open
-    g.update(AttrDict(pir=pir, mag=True))
+    g.update(AttrDict(pir=pir, mag=False))
 
     assert mock.call('door open!') in notify.mock_calls
 
@@ -137,16 +142,18 @@ def test_garage_notify_canceled_after_close(fancysleep, monkeypatch):
     g.notify = notify
 
     # initial setup
-    g.update(AttrDict(pir=False, mag=False))
+    g.update(AttrDict(pir=False, mag=True))
 
     with fancysleep:
+        gevent.sleep(5)
+
         # door open
-        g.update(AttrDict(pir=True, mag=True))
+        g.update(AttrDict(pir=True, mag=False))
 
         gevent.sleep(g.notify_delay-20)
         notify.assert_not_called_with("Garage is still open after {mag_open} minutes!")
 
         # close door
-        g.update(AttrDict(pir=True, mag=False))
+        g.update(AttrDict(pir=True, mag=True))
         gevent.sleep(300)
         notify.assert_not_called_with("Garage is still open after {mag_open} minutes!")
