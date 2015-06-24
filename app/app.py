@@ -71,6 +71,9 @@ def gen_data():
     ))
 
 def poll():
+    '''
+    Periodically update page data.
+    '''
     while True:
         gen_data()
         sleep(5)
@@ -107,6 +110,9 @@ def stream():
     return Response(get_data(), mimetype='text/event-stream')
 
 def get_data():
+    '''
+    pull data from queue and send it to the browser.
+    '''
     yield 'retry: 10000\n\n'
     q = Queue()
     print('add client')
