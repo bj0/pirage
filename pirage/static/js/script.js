@@ -6,7 +6,9 @@ var listenUrl = "/stream";
 var fakeTestData = {
     mag: true,
     pir: false,
+    temp: 63.5,
     times: {
+      now: 0,
       last_mag: "None",
       last_pir: "None"
     }

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import gevent
 from gevent import monkey, sleep, spawn
 from gevent.queue import Queue
@@ -126,10 +128,14 @@ def get_data():
         print('remove client')
         clients.remove(q)
 
-if __name__ == '__main__':
+def main():
     # app.run(port=8245, debug=True)
     try:
         WSGIServer(('',8245), app).serve_forever()
     finally:
         hw.stop()
     # wsgi.server(eventlet.listen(('',8245)), app)
+
+
+if __name__ == '__main__':
+    main()
