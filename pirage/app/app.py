@@ -67,12 +67,11 @@ def push_data(data):
     Push a set of data to listening clients.
     '''
     for q in list(clients):
-        now = time.time()/60
         q.put({
             'times': {
-                'now':now,
-                'last_pir':now-data.last_pir,
-                'last_mag':now-data.last_mag
+                'now':data.now,
+                'last_pir':data.last_pir,
+                'last_mag':data.last_mag
             },
             'pir': data.pir,
             'mag': data.mag,
@@ -83,9 +82,21 @@ def gen_data():
     '''
     Generate data to push to clients.
     '''
-    last_pir = '{} min'.format((g.last_motion or 0)/60)
-    last_mag = '{} min'.format((g.last_door_change or 0)/60)
+    now = time.time()
+    last_pir = int(now - g.last_motion or 0)
+    last_mag = int(now - g.last_door_change or 0)
+    if last_pir > 60:
+        last_pir = '{} min'.format(last_pir/60)
+    else:
+        last_pir = '{} sec'.format(last_pir)
+
+    if last_mag > 60:
+        last_mag = '{} min'.format(last_mag/60)
+    else:
+        last_mag = '{} sec'.format(last_mag)
+
     push_data(AttrDict(
+        now = now,
         last_pir=last_pir,
         last_mag=last_mag,
         pir=g.motion, mag = g.door_open
