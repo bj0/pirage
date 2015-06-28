@@ -14,10 +14,12 @@ monkey.patch_all()
 from flask import Flask, render_template, Response
 import time
 import json
+import subprocess as sp
+import re
 
 from pirage.hardware import Monitor
 from pirage.garage import Garage
-from priage.util import AttrDict
+from pirage.util import AttrDict
 
 clients = []
 
@@ -37,27 +39,44 @@ def create_app():
     #TODO start hardware monitoring
     #TODO start history/triggers watching
 
+    app._temp = 0
+
     hw.start()
     # periodically update page
     spawn(poll)
     # spawns fake data greenlet
     # spawn(gen)
+    spawn(get_temp)
 
     return app
+
+def get_temp():
+    while True:
+        try:
+            temp = sp.check_output('/opt/vcgencmd measure_temp'.split())
+            m = re.search('\d+(\.\d+)?', temp)
+            if m:
+                app._temp = float(m.group(0))
+        except Exception as ex:
+            print('no temp:', ex)
+
+        sleep(30)
 
 def push_data(data):
     '''
     Push a set of data to listening clients.
     '''
     for q in list(clients):
+        now = time.time()/60
         q.put({
             'times': {
-                'now':int(time.time()),
-                'last_pir':data.last_pir,
-                'last_mag':data.last_mag
+                'now':now,
+                'last_pir':now-data.last_pir,
+                'last_mag':now-data.last_mag
             },
             'pir': data.pir,
-            'mag': data.mag
+            'mag': data.mag,
+            'temp': app._temp
         })
 
 def gen_data():
