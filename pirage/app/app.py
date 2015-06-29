@@ -83,8 +83,8 @@ def gen_data():
     Generate data to push to clients.
     '''
     now = time.time()
-    last_pir = int(now - g.last_motion or 0)
-    last_mag = int(now - g.last_door_change or 0)
+    last_pir = int(now - (g.last_motion or 0))
+    last_mag = int(now - (g.last_door_change or 0))
     if last_pir > 60:
         last_pir = '{} min'.format(last_pir/60)
     else:
