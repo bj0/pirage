@@ -6,7 +6,7 @@ import os
 # from asyncio import coroutine, async, sleep
 from gevent import spawn, sleep
 
-from .util import shelf
+from .util import shelf, AttrDict
 
 class Garage:
     '''

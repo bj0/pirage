@@ -8,6 +8,25 @@ from pirage.util import AttrDict
 from pirage.garage import Garage
 from .fastsleep import fastsleep, fancysleep
 
+def test_data(monkeypatch):
+    toggle = mock.MagicMock()
+    monkeypatch.setattr('time.time', lambda: 500)
+
+    g = Garage(toggle)
+    g.last_motion = 500-10
+    g.last_door_change = 500-300
+    g.motion = False
+    g.door_open = False
+
+    data = g.data
+
+    assert data.pir == False
+    assert data.mag == False
+    assert data.last_pir == 10
+    assert data.last_mag == 300
+    assert data.last_pir_str == '10 sec'
+    assert data.last_mag_str == '5 min'
+
 def test_garage_autoclose(fancysleep, monkeypatch):
     toggle = mock.MagicMock()
     notify = mock.MagicMock()
@@ -21,7 +40,7 @@ def test_garage_autoclose(fancysleep, monkeypatch):
 
     with fancysleep:
         gevent.sleep(5)
-        
+
         # open door
         g.update(AttrDict(pir=False, mag=False))
 
