@@ -27,7 +27,7 @@ def clone():
         run('git clone {}'.format(project))
 
 @task
-def update():
+def pull():
     with cd('~/pirage'):
         run('git pull')
 
