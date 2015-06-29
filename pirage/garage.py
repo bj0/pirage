@@ -29,6 +29,9 @@ class Garage:
         self._toggle = toggle_function
 
     def save(self):
+        '''
+        Save last sensor change times to disk.
+        '''
         if not os.path.exists('/var/lib/pirage'):
             os.makedirs('/var/lib/pirage')
         with shelve.open('/var/lib/pirage/data.db') as s:
@@ -38,6 +41,9 @@ class Garage:
             }
 
     def load(self):
+        '''
+        Load last sensor change times to disk.
+        '''
         if not os.path.exists('/var/lib/pirage'):
             return
         with shelve.open('/var/lib/pirage/data.db') as s:
@@ -152,7 +158,7 @@ class Garage:
             open="Open" if self.door_open else "Closed",
             mag_open = mag_open )
         print(message)
-        #TODO email?
+        #TODO email? dweet?
 
     def toggle_door(self):
         print('toggling door')
