@@ -149,14 +149,17 @@ def get_data():
         print('remove client')
         app._clients.remove(q)
 
-def main():
+def main(**kwargs):
     parser = argparse.ArgumentParser()
     parser.add_argument('-p','--port', type=int, help='server port',
-        default=8245)
-    parser.add_argument('--host', help='server host', default='')
+        default=kwargs.get('port',8245))
+    parser.add_argument('--host', help='server host',
+        default=kwargs.get('host',''))
+    parser.add_argument('--no-pir', help='disable pir sensor',
+        default=kwargs.get('no_pir', False))
     args = parser.parse_args()
 
-    # app.run(port=8245, debug=True)
+    app._hw._use_pir = not args.no_pir
     try:
         WSGIServer((args.host, args.port), app).serve_forever()
     finally:

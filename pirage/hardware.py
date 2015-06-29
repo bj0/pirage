@@ -87,6 +87,7 @@ class Monitor:
         self.running = None
         self._current = AttrDict(mag=None, pir=None)
         self._run_task = None
+        self._use_pir = True
 
         self.read_interval = 2 # 2 second
 
@@ -94,7 +95,8 @@ class Monitor:
         io.setmode(io.BCM)
 
         # init pins
-        io.setup(_pir_pin, io.IN)
+        if self._use_pir:
+            io.setup(_pir_pin, io.IN)
         io.setup(_mag_pin, io.IN, pull_up_down=io.PUD_UP)
         io.setup(_relay_pin, io.OUT, initial=io.HIGH)
         # make sure relay doesn't click when we start
@@ -180,7 +182,7 @@ class Monitor:
 
     def _read_sensors(self):
         state = AttrDict()
-        state.pir = io.input(_pir_pin)
+        state.pir = io.input(_pir_pin) if self._use_pir else 0
         state.mag = io.input(_mag_pin)
 
         return state

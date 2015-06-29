@@ -22,6 +22,32 @@ def gpio(monkeypatch):
 
     return io
 
+def test_no_pir(fastsleep, gpio):
+    '''
+    make sure we ignore pir sensor if disabled
+    '''
+    from itertools import cycle
+    fastsleep.patch('pirage.hardware.sleep')
+
+    # only pir changes
+    gpio.input.side_effect = cycle((gpio.LOW,))
+
+    mm = MagicMock()
+    m = Monitor()
+    m._use_pir = False # disable pir input
+    m.register(mm.callback)
+
+    m.start()
+    gevent.sleep() # let greenlet run once
+    gevent.sleep() # let greenlet run once
+    gevent.sleep() # let greenlet run once
+    gevent.sleep() # let greenlet run once
+
+    assert len(mm.callback.mock_calls) == 1 # only called once
+    assert len(gpio.input.mock_calls) == 4 # only mag is checked
+
+
+
 def test_run_fires_callback_on_start():
     mm = MagicMock()
     m = Monitor()
