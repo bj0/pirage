@@ -151,7 +151,8 @@ def get_data():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p','--port', type=int, help='server port')
+    parser.add_argument('-p','--port', type=int, help='server port',
+        default=8245)
     parser.add_argument('--host', help='server host', default='')
     args = parser.parse_args()
 
