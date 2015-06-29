@@ -29,6 +29,8 @@ class Garage:
         self._toggle = toggle_function
 
     def save(self):
+        if not os.path.exists('/var/lib/pirage'):
+            os.makedirs('/var/lib/pirage')
         with shelve.open('/var/lib/pirage/data.db') as s:
             s['state'] = {
                 'last_door_change': self.last_door_change,
@@ -36,6 +38,8 @@ class Garage:
             }
 
     def load(self):
+        if not os.path.exists('/var/lib/pirage'):
+            return
         with shelve.open('/var/lib/pirage/data.db') as s:
             d = s['state']
             self.last_door_change = d.get('last_door_change', None)
