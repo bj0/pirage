@@ -156,23 +156,28 @@ class Garage:
 
     @property
     def data(self):
+        '''
+        Package up current data in a usable form.
+        '''
         now = time.time()
         last_pir = int(now - (g.last_motion or 0))
         last_mag = int(now - (g.last_door_change or 0))
         if last_pir > 60:
-            last_pir = '{} min'.format(last_pir/60)
+            last_pir_str = '{} min'.format(last_pir/60)
         else:
-            last_pir = '{} sec'.format(last_pir)
+            last_pir_str = '{} sec'.format(last_pir)
 
         if last_mag > 60:
-            last_mag = '{} min'.format(last_mag/60)
+            last_mag_str = '{} min'.format(last_mag/60)
         else:
-            last_mag = '{} sec'.format(last_mag)
+            last_mag_str = '{} sec'.format(last_mag)
 
         data = AttrDict(
             now = now,
             last_pir=last_pir,
             last_mag=last_mag,
+            last_pir_str=last_pir_str,
+            last_mag_str=last_mag_str,
             pir=g.motion, mag = g.door_open
         )
 

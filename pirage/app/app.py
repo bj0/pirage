@@ -72,8 +72,8 @@ def push_data(data):
         q.put({
             'times': {
                 'now':data.now,
-                'last_pir':data.last_pir,
-                'last_mag':data.last_mag
+                'last_pir':data.last_pir_str,
+                'last_mag':data.last_mag_str
             },
             'pir': data.pir,
             'mag': data.mag,
