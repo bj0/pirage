@@ -6,6 +6,8 @@ import os
 # from asyncio import coroutine, async, sleep
 from gevent import spawn, sleep
 
+from .util import shelf
+
 class Garage:
     '''
     Manage the state of the garage.
@@ -35,7 +37,7 @@ class Garage:
         '''
         if not os.path.exists('/var/lib/pirage'):
             os.makedirs('/var/lib/pirage')
-        with shelve.open('/var/lib/pirage/data.db') as s:
+        with shelf('/var/lib/pirage/data.db') as s:
             s['state'] = {
                 'last_door_change': self.last_door_change,
                 'last_motion': self.last_motion,
@@ -47,7 +49,7 @@ class Garage:
         '''
         if not os.path.exists('/var/lib/pirage'):
             return
-        with shelve.open('/var/lib/pirage/data.db') as s:
+        with shelf('/var/lib/pirage/data.db') as s:
             d = s['state']
             self.last_door_change = d.get('last_door_change', None)
             self.last_motion = d.get('last_motion', None)
