@@ -1,6 +1,7 @@
 # manage garage state
 
 import time
+import shelve
 # from asyncio import coroutine, async, sleep
 from gevent import spawn, sleep
 
@@ -26,6 +27,19 @@ class Garage:
         self.close_warning = 5*60 # 5 min
 
         self._toggle = toggle_function
+
+    def save(self):
+        with shelve.open('/var/lib/pirage/data.db') as s:
+            s['state'] = {
+                'last_door_change': self.last_door_change,
+                'last_motion': self.last_motion,
+            }
+
+    def load(self):
+        with shelve.open('/var/lib/pirage/data.db') as s:
+            d = s['state']
+            self.last_door_change = d.get('last_door_change', None)
+            self.last_motion = d.get('last_motion', None)
 
     def update(self, state):
         # check door
@@ -137,4 +151,29 @@ class Garage:
         #TODO email?
 
     def toggle_door(self):
+        print('toggling door')
         self._toggle()
+
+    @property
+    def data(self):
+        now = time.time()
+        last_pir = int(now - (g.last_motion or 0))
+        last_mag = int(now - (g.last_door_change or 0))
+        if last_pir > 60:
+            last_pir = '{} min'.format(last_pir/60)
+        else:
+            last_pir = '{} sec'.format(last_pir)
+
+        if last_mag > 60:
+            last_mag = '{} min'.format(last_mag/60)
+        else:
+            last_mag = '{} sec'.format(last_mag)
+
+        data = AttrDict(
+            now = now,
+            last_pir=last_pir,
+            last_mag=last_mag,
+            pir=g.motion, mag = g.door_open
+        )
+
+        return data

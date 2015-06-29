@@ -27,6 +27,7 @@ clients = []
 hw = Monitor()
 # create garage monitor that uses hw monitor to close garage
 g = Garage(hw.toggle_relay)
+g.load()
 # update garage when hw monitor gets changes
 hw.register(g.update)
 # update page when hw monitor gets changes
@@ -46,11 +47,12 @@ def create_app():
     spawn(poll)
     # spawns fake data greenlet
     # spawn(gen)
-    spawn(get_temp)
+    # periodically get cpu temperature
+    spawn(poll_temp)
 
     return app
 
-def get_temp():
+def poll_temp():
     while True:
         try:
             temp = sp.check_output('/opt/vc/bin/vcgencmd measure_temp'.split())
@@ -82,25 +84,15 @@ def gen_data():
     '''
     Generate data to push to clients.
     '''
-    now = time.time()
-    last_pir = int(now - (g.last_motion or 0))
-    last_mag = int(now - (g.last_door_change or 0))
-    if last_pir > 60:
-        last_pir = '{} min'.format(last_pir/60)
-    else:
-        last_pir = '{} sec'.format(last_pir)
+    data = g.data
+    push_data(data)
 
-    if last_mag > 60:
-        last_mag = '{} min'.format(last_mag/60)
-    else:
-        last_mag = '{} sec'.format(last_mag)
+    # dweet on mag change?
+    if _last_mag_push != g.door_open:
+        dweet.report('dat_pi_thang','secret-garden-k3y',data)
+        _last_mag_push = g.door_open
 
-    push_data(AttrDict(
-        now = now,
-        last_pir=last_pir,
-        last_mag=last_mag,
-        pir=g.motion, mag = g.door_open
-    ))
+_last_mag_push = None
 
 def poll():
     '''
@@ -134,7 +126,7 @@ def index2():
 
 @app.route('/click', methods=['POST'])
 def click():
-    print('click!')
+    g.toggle_door()
     return ""
 
 @app.route('/stream')
@@ -164,6 +156,7 @@ def main():
         WSGIServer(('',8245), app).serve_forever()
     finally:
         hw.stop()
+        g.save()
     # wsgi.server(eventlet.listen(('',8245)), app)
 
 
