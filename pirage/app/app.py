@@ -92,8 +92,6 @@ def gen_data():
         dweet.report('dat_pi_thang','secret-garden-k3y',data)
         app._last_mag_push = g.door_open
 
-app._last_mag_push = None
-
 def poll():
     '''
     Periodically update page data.
