@@ -50,7 +50,7 @@ class Garage:
         if not os.path.exists('/var/lib/pirage'):
             return
         with shelf('/var/lib/pirage/data.db') as s:
-            d = s['state']
+            d = s.get('state', {})
             self.last_door_change = d.get('last_door_change', None)
             self.last_motion = d.get('last_motion', None)
 

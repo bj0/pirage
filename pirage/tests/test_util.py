@@ -12,3 +12,4 @@ def test_shelf():
 
         with shelf(os.path.join(path, 'test.db')) as s:
             assert s['test']['a test'] == 25
+            assert s.get('test',{}).get('a test',0) == 25
