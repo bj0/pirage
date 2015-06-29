@@ -88,11 +88,11 @@ def gen_data():
     push_data(data)
 
     # dweet on mag change?
-    if _last_mag_push != g.door_open:
+    if app._last_mag_push != g.door_open:
         dweet.report('dat_pi_thang','secret-garden-k3y',data)
-        _last_mag_push = g.door_open
+        app._last_mag_push = g.door_open
 
-_last_mag_push = None
+app._last_mag_push = None
 
 def poll():
     '''

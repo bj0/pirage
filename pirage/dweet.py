@@ -2,6 +2,7 @@ import dweepy
 import hmac
 import hashlib
 import json
+import base64
 
 from gevent import sleep
 
@@ -9,7 +10,7 @@ class InvalidDweetError(Exception):
     pass
 
 def calc_mac(key, msg):
-    return hmac.new(key, msg, hashlib.sha1)
+    return base64.b64encode(hmac.new(key, msg, hashlib.sha1).digest())
 
 def report(thing, key, data):
     '''
@@ -27,7 +28,10 @@ def get_report(thing, key):
 
     If validation fails, throws InvalidDweetError
     '''
-    dweet = dweepy.get_latest_dweet_for(thing)[0]
+    dweets = dweepy.get_latest_dweet_for(thing)
+    if len(dweets) == 0:
+        return None
+    dweet = dweets[0]
     if not verify(key, dweet['content']):
         raise InvalidDweetError('verification failed')
     return dweet['content']['data']
