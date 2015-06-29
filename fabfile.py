@@ -7,6 +7,20 @@ env.hosts = ['pirage']
 
 project = 'https://github.com/bj0/pirage.git'
 
+def venv_run(cmd):
+    run('source ~/venv/bin/activate && {}'.format(cmd))
+
+@task
+def setup_venv():
+    with cd('~/pirage'):
+        run('virtualenv venv')
+        venv_run('pip install -r requirements.txt')
+
+@task
+def pirage():
+    with cd('~/pirage'):
+        venv_run('python run.py')
+
 @task
 def clone():
     with cd('~/'):
