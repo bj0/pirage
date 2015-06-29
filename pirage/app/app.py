@@ -10,12 +10,12 @@ monkey.patch_all()
 # from eventlet.queue import Queue
 # eventlet.monkey_patch()
 
-
 from flask import Flask, render_template, Response
 import time
 import json
 import subprocess as sp
 import re
+import argparse
 
 from pirage.hardware import Monitor
 from pirage.garage import Garage
@@ -150,9 +150,14 @@ def get_data():
         app._clients.remove(q)
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p','--port', type=int, help='server port')
+    parser.add_argument('--host', type=int, help='server host', default='')
+    args = parser.parse_args()
+
     # app.run(port=8245, debug=True)
     try:
-        WSGIServer(('',8245), app).serve_forever()
+        WSGIServer((args.host, args.port), app).serve_forever()
     finally:
         app._hw.stop()
         app._g.save()
