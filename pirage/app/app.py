@@ -143,7 +143,7 @@ def get_data():
     try:
         while True:
             for data in iter(q.get, 'nan'):
-                print('got data:',data)
+                # print('got data:',data)
                 yield 'data: {}\n\n'.format(json.dumps(data))
     finally:
         print('remove client')
