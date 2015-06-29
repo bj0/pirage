@@ -26,6 +26,7 @@ def test_no_pir(fastsleep, gpio):
     '''
     make sure we ignore pir sensor if disabled
     '''
+    from pirage import hardware as hw
     from itertools import cycle
     fastsleep.patch('pirage.hardware.sleep')
 
@@ -39,9 +40,13 @@ def test_no_pir(fastsleep, gpio):
 
     m.start()
     gevent.sleep() # let greenlet run once
+    gpio.input.assert_called_with(hw._mag_pin)
     gevent.sleep() # let greenlet run once
+    gpio.input.assert_called_with(hw._mag_pin)
     gevent.sleep() # let greenlet run once
+    gpio.input.assert_called_with(hw._mag_pin)
     gevent.sleep() # let greenlet run once
+    gpio.input.assert_called_with(hw._mag_pin)
 
     assert len(mm.callback.mock_calls) == 1 # only called once
     assert len(gpio.input.mock_calls) == 4 # only mag is checked
