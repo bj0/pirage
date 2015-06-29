@@ -171,8 +171,8 @@ class Garage:
         Package up current data in a usable form.
         '''
         now = time.time()
-        last_pir = int(now - (this.last_motion or 0))
-        last_mag = int(now - (this.last_door_change or 0))
+        last_pir = int(now - (self.last_motion or 0))
+        last_mag = int(now - (self.last_door_change or 0))
         if last_pir > 60:
             last_pir_str = '{} min'.format(last_pir/60)
         else:
@@ -189,7 +189,7 @@ class Garage:
             last_mag=last_mag,
             last_pir_str=last_pir_str,
             last_mag_str=last_mag_str,
-            pir=this.motion, mag = this.door_open
+            pir=self.motion, mag = self.door_open
         )
 
         return data
