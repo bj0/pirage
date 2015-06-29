@@ -53,7 +53,7 @@ def create_app():
 def get_temp():
     while True:
         try:
-            temp = sp.check_output('/opt/vcgencmd measure_temp'.split())
+            temp = sp.check_output('/opt/vc/bin/vcgencmd measure_temp'.split())
             m = re.search('\d+(\.\d+)?', temp)
             if m:
                 app._temp = float(m.group(0))
