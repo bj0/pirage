@@ -18,7 +18,7 @@ class Garage:
         self.motion = False
         self.last_door_change = None
         self.last_motion = None
-        self.locked = False
+        self._locked = False
 
         self.task = None
         self.close_task = None
@@ -30,6 +30,18 @@ class Garage:
         self.close_warning = 5*60 # 5 min
 
         self._toggle = toggle_function
+
+    def lock(self, locked=True):
+        self._locked = locked
+        if locked:
+            # stop any auto-close
+            if self.close_task is not None:
+                self.close_task.kill()
+                self.close_task = None
+        elif self.close_task is None and self.door_open:
+            # start up a close
+            self.notify('starting up auto-close from unlock')
+            self.close_task = spawn(self.close_after, self.close_delay)
 
     def save(self):
         '''
@@ -64,8 +76,10 @@ class Garage:
                 self.notify("door open!")
                 if self.close_task is not None:
                     self.close_task.kill()
+                    self.close_task = None
                 # self.close_task = async(self.close_after(self.close_delay))
-                self.close_task = spawn(self.close_after, self.close_delay)
+                if not self.locked:
+                    self.close_task = spawn(self.close_after, self.close_delay)
 
                 if self.notify_task is not None:
                     self.notify_task.kill()
@@ -166,6 +180,14 @@ class Garage:
     def toggle_door(self):
         print('toggling door')
         self._toggle()
+
+    @property
+    def locked(self):
+        return self._locked
+
+    @locked.setter
+    def locked(self, value):
+        self.lock(value)
 
     @property
     def data(self):
