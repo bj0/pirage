@@ -10,7 +10,7 @@ monkey.patch_all()
 # from eventlet.queue import Queue
 # eventlet.monkey_patch()
 
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, request, jsonify
 import time
 import json
 import subprocess as sp
@@ -29,6 +29,7 @@ def create_app():
     #TODO start history/triggers watching
 
     app._temp = 0
+    app._dweet = True
     app._last_mag_push = None
 
     app._clients = []
@@ -78,7 +79,9 @@ def push_data(data):
             },
             'pir': data.pir,
             'mag': data.mag,
-            'temp': app._temp
+            'temp': app._temp,
+            'locked': app._g.locked,
+            'pir_enabled': not app._hw.ignore_pir
         })
 
 def gen_data():
@@ -89,8 +92,8 @@ def gen_data():
     push_data(data)
 
     # dweet on mag change?
-    if app._last_mag_push != app._g.door_open:
-        #dweet.report('dat_pi_thang','secret-garden-k3y',data)
+    if app._dweet and (app._last_mag_push != app._g.door_open):
+        dweet.report('dat_pi_thang','secret-garden-k3y',data)
         app._last_mag_push = app._g.door_open
 
 def poll():
@@ -109,7 +112,9 @@ def gen_fake():
             last_pir=random.randint(1,25),
             last_mag=random.randint(1,7),
             pir=False,
-            mag=True))
+            mag=True,
+            locked=False,
+            pir_enabled=True))
         sleep(5)
 
 app = create_app()
@@ -127,6 +132,20 @@ def index2():
 def click():
     app._g.toggle_door()
     return ""
+
+@app.route('/set_lock', methods=['POST'])
+def lock():
+    locked = request.json['locked']
+    print('set lock:', locked)
+    app._g.lock(locked)
+    return jsonify(locked=app._g.locked)
+
+@app.route('/set_pir', methods=['POST'])
+def set_pir():
+    pir = request.get_json()['enabled']
+    print('set pir:', pir)
+    app._hw.ignore_pir = not pir
+    return jsonify(pir_enabled=not app._hw.ignore_pir)
 
 @app.route('/stream')
 def stream():
@@ -156,10 +175,19 @@ def main(**kwargs):
     parser.add_argument('--host', help='server host',
         default=kwargs.get('host',''))
     parser.add_argument('--no-pir', help='disable pir sensor',
+        action='store_true',
         default=kwargs.get('no_pir', False))
+    parser.add_argument('--lock', help='disable auto closing garage',
+        action='store_true',
+        default=kwargs.get('lock', False))
+    parser.add_argument('--dweet', help='dweet door changes',
+        action='store_true',
+        default=kwargs.get('no_dweet', False))
     args = parser.parse_args()
 
     app._hw._use_pir = not args.no_pir
+    app._g.lock(args.lock)
+    app._dweet = args.dweet
     try:
         WSGIServer((args.host, args.port), app).serve_forever()
     finally:
