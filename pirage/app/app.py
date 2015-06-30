@@ -89,8 +89,12 @@ def gen_data():
 
     # dweet on mag change?
     if app._dweet and (app._last_mag_push != app._g.door_open):
-        #dweet.report('dat-pi-thang','secret-garden-k3y',data)
-        app._last_mag_push = app._g.door_open
+        do_dweet()
+
+def do_dweet():
+    print ('dweet!')
+    #dweet.report('dat-pi-thang','secret-garden-k3y',data)
+    app._last_mag_push = app._g.door_open
 
 def poll():
     '''
@@ -149,6 +153,8 @@ def set_dweet():
     dweet = request.get_json()['enabled']
     print('set dweet:', dweet)
     app._dweet = dweet
+    if dweet:
+        do_dweet()
     return jsonify(dweet_enabled=app._dweet)
 
 @app.route('/stream')
