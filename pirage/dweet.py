@@ -20,6 +20,7 @@ def report(thing, key, data):
     '''
     mac = calc_mac(key, json.dumps(data))
     packet = {'data': data, 'sig': mac}
+    print('dweeting for {}!'.format(thing))
     dweepy.dweet_for(thing, packet)
 
 def get_report(thing, key):
