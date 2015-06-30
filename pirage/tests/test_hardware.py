@@ -35,7 +35,7 @@ def test_no_pir(fastsleep, gpio):
 
     mm = MagicMock()
     m = Monitor()
-    m._use_pir = False # disable pir input
+    m.ignore_pir = True # disable pir input
     m.register(mm.callback)
 
     m.start()
