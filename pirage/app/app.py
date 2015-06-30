@@ -93,7 +93,7 @@ def gen_data():
 
     # dweet on mag change?
     if app._dweet and (app._last_mag_push != app._g.door_open):
-        dweet.report('dat_pi_thang','secret-garden-k3y',data)
+        dweet.report('dat-pi-thang','secret-garden-k3y',data)
         app._last_mag_push = app._g.door_open
 
 def poll():
