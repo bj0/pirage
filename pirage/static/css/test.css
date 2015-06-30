@@ -64,11 +64,14 @@ input {
     display: initial;
 }
 
-[data-locked=true] > .fa-unlock {  display: none; }
-[data-locked=false] > .fa-lock {  display: none; }
+[data-locked=true] > .no-lock {  display: none; }
+[data-locked=false] > .lock {  display: none; }
 
-[data-pir-enabled=false] > .fa-eye { display: none; }
-[data-pir-enabled=true] > .fa-eye-slash { display: none; }
+[data-pir-enabled=false] > .pir { display: none; }
+[data-pir-enabled=true] > .no-pir { display: none; }
+
+[data-dweet-enabled=false] > .dweet { display: none; }
+[data-dweet-enabled=true] > .no-dweet { display: none; }
 
 label {
   text-align: center;

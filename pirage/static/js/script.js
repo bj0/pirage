@@ -3,6 +3,7 @@ var postUrl = "/click";
 var listenUrl = "/stream";
 var lockUrl = "/set_lock";
 var pirUrl = "/set_pir";
+var dweetUrl = "/set_dweet"
 
 jQuery["postJSON"] = function( url, data, callback ) {
     // shift arguments if data argument was omitted
@@ -28,6 +29,7 @@ var fakeTestData = {
     temp: 63.5,
     locked: false,
     pir_enabled: true,
+    dweet_enabled: true,
     times: {
       now: 0,
       last_mag: "None",
@@ -44,6 +46,8 @@ $(document).ready(function () {
     $("#lock").on("click", toggleLock);
 
     $("#pir").on("click", togglePir);
+
+    $("#dweet").on("click", toggleDweet);
 });
 
 // No idea if this works, nor how to test it
@@ -79,6 +83,15 @@ function togglePir() {
     });
 }
 
+function toggleDweet() {
+  var enabled = $('#dweet').attr('data-dweet-enabled') === 'true';
+  $.postJSON(dweetUrl, { enabled: !enabled },
+    function(data) {
+      console.log(data);
+      $("#dweet").attr("data-dweet-enabled", data.dweet_enabled);
+    });
+}
+
 function handleFail() {
     // Finish me - this fires on 400/500 errors
     // Shouldn't need to handle success since the listener will update the UI once the server pushes a message
@@ -91,5 +104,6 @@ function updatePage(data) {
     $("#last-pir").html(data.times.last_pir);
     $("#lock").attr("data-locked", data.locked);
     $("#pir").attr("data-pir-enabled", data.pir_enabled);
+    $("#dweet").attr("data-dweet-enabled", data.dweet_enabled);
     // console.log($("#pir").data("pir-enabled"));
 }

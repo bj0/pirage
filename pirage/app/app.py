@@ -20,13 +20,10 @@ import argparse
 from pirage.hardware import Monitor
 from pirage.garage import Garage
 from pirage.util import AttrDict
+from pirage import dweet
 
 def create_app():
     app = Flask(__name__, static_folder='../static', static_url_path='/static')
-    # app._q = Queue()
-
-    #TODO start hardware monitoring
-    #TODO start history/triggers watching
 
     app._temp = 0
     app._dweet = True
@@ -47,8 +44,6 @@ def create_app():
     app._hw.start()
     # periodically update page
     spawn(poll)
-    # spawns fake data greenlet
-    # spawn(gen)
     # periodically get cpu temperature
     spawn(poll_temp)
 
@@ -81,7 +76,8 @@ def push_data(data):
             'mag': data.mag,
             'temp': app._temp,
             'locked': app._g.locked,
-            'pir_enabled': not app._hw.ignore_pir
+            'pir_enabled': not app._hw.ignore_pir,
+            'dweet_enabled': app._dweet
         })
 
 def gen_data():
@@ -93,7 +89,7 @@ def gen_data():
 
     # dweet on mag change?
     if app._dweet and (app._last_mag_push != app._g.door_open):
-        dweet.report('dat-pi-thang','secret-garden-k3y',data)
+        #dweet.report('dat-pi-thang','secret-garden-k3y',data)
         app._last_mag_push = app._g.door_open
 
 def poll():
@@ -114,7 +110,8 @@ def gen_fake():
             pir=False,
             mag=True,
             locked=False,
-            pir_enabled=True))
+            pir_enabled=True,
+            dweet_enabled=False))
         sleep(5)
 
 app = create_app()
@@ -146,6 +143,13 @@ def set_pir():
     print('set pir:', pir)
     app._hw.ignore_pir = not pir
     return jsonify(pir_enabled=not app._hw.ignore_pir)
+
+@app.route('/set_dweet', methods=['POST'])
+def set_dweet():
+    dweet = request.get_json()['enabled']
+    print('set dweet:', dweet)
+    app._dweet = dweet
+    return jsonify(dweet_enabled=app._dweet)
 
 @app.route('/stream')
 def stream():
@@ -193,7 +197,6 @@ def main(**kwargs):
     finally:
         app._hw.stop()
         app._g.save()
-    # wsgi.server(eventlet.listen(('',8245)), app)
 
 
 if __name__ == '__main__':

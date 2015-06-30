@@ -49,15 +49,25 @@
   </div>
   <div>
     <button id="lock" class="pure-button" type="button" data-locked=false>
-      <i class="fa fa-lock"></i>
-      <i class="fa fa-unlock"></i>
+      <i class="fa fa-lock lock"></i>
+      <i class="fa fa-unlock no-lock"></i>
       &nbsp; LOK
     </button>
   </div>
   <div>
     <button id="pir" class="pure-button" type="button" data-pir-enabled=true>
-      <i class="fa fa-eye"></i>
-      <i class="fa fa-eye-slash"></i>
+      <i class="fa fa-eye pir"></i>
+      <i class="fa fa-eye-slash no-pir"></i>
+      &nbsp;PIR
+    </button>
+  </div>
+  <div>
+    <button id="dweet" class="pure-button" type="button" data-dweet-enabled=true>
+      <i class="fa fa-whatsapp dweet"></i>
+      <span class="fa-stack no-dweet">
+        <i class="fa fa-whatsapp fa-stack-1x"></i>
+        <i class="fa fa-ban fa-stack-1x"></i>
+      </span>
       &nbsp;PIR
     </button>
   </div>
