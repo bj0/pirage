@@ -22,6 +22,35 @@ def gpio(monkeypatch):
 
     return io
 
+def test_modifying_update_result_doesnt_break(fastsleep, gpio):
+        from pirage import hardware as hw
+        from itertools import cycle
+        fastsleep.patch('pirage.hardware.sleep')
+
+        # mag swithc toggles
+        gpio.input.side_effect = cycle((gpio.LOW,gpio.HIGH))
+
+        mm = MagicMock()
+        m = Monitor()
+        def mod(r):
+            r.mag = not r.mag
+            r.x = 5
+        mm.callback.side_effect = mod
+        m.register(mm.callback)
+        m.start()
+        gevent.sleep() # no change L / H
+        m.ignore_pir = True # disable pir input
+        gevent.sleep() # change L / L
+        # hack, since mock doesn't keep immutable call args
+        assert m._current == {'pir':gpio.LOW, 'mag': gpio.LOW}
+        gevent.sleep() # change L / H
+        assert m._current == {'pir':gpio.LOW, 'mag': gpio.HIGH}
+        gevent.sleep() # change L / L
+        assert m._current == {'pir':gpio.LOW, 'mag': gpio.LOW}
+        m.stop()
+
+        assert len(mm.callback.mock_calls) == 4
+
 def test_no_pir(fastsleep, gpio):
     '''
     make sure we ignore pir sensor if disabled
@@ -30,7 +59,7 @@ def test_no_pir(fastsleep, gpio):
     from itertools import cycle
     fastsleep.patch('pirage.hardware.sleep')
 
-    # only pir changes
+    # we only read door pin
     gpio.input.side_effect = cycle((gpio.LOW,))
 
     mm = MagicMock()
@@ -47,11 +76,34 @@ def test_no_pir(fastsleep, gpio):
     gpio.input.assert_called_with(hw._mag_pin)
     gevent.sleep() # let greenlet run once
     gpio.input.assert_called_with(hw._mag_pin)
+    m.stop()
 
     assert len(mm.callback.mock_calls) == 1 # only called once
     assert len(gpio.input.mock_calls) == 4 # only mag is checked
 
+def test_no_pir_door_still_works(fastsleep, gpio):
+    from pirage import hardware as hw
+    from itertools import cycle
+    fastsleep.patch('pirage.hardware.sleep')
 
+    # mag swithc toggles
+    gpio.input.side_effect = cycle((gpio.LOW,gpio.HIGH))
+
+    mm = MagicMock()
+    m = Monitor()
+    m.register(mm.callback)
+    m.start()
+    gevent.sleep() # no change L / H
+    m.ignore_pir = True # disable pir input
+    gevent.sleep() # change L / L
+    mm.callback.assert_called_with({'pir': gpio.LOW, 'mag': gpio.LOW})
+    gevent.sleep() # change L / H
+    mm.callback.assert_called_with({'pir': gpio.LOW, 'mag': gpio.HIGH})
+    gevent.sleep() # change L / L
+    mm.callback.assert_called_with({'pir': gpio.LOW, 'mag': gpio.LOW})
+    m.stop()
+
+    assert len(mm.callback.mock_calls) == 4
 
 def test_run_fires_callback_on_start():
     mm = MagicMock()

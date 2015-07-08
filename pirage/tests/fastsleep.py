@@ -182,10 +182,19 @@ class FancySleep(FastSleep):
 
 
 @pytest.fixture
-def fastsleep(monkeypatch):
+def fastsleep(request, monkeypatch):
     '''
     Fixture for using FastSleep in py.test
     '''
+#    def fin():
+        # this will reset the hub, stopping any left-running greenlets...
+#        gevent.reinit()
+#        gevent.get_hub().destroy(destroy_loop=True)
+#        import gc
+#        from greenlet import greenlet
+#        print([obj for obj in gc.get_objects() if isinstance(obj, greenlet)])
+#        print('final')
+#    request.addfinalizer(fin)
     return FastSleep(monkeypatch)
 
 @pytest.fixture

@@ -95,8 +95,8 @@ class Monitor:
         io.setmode(io.BCM)
 
         # init pins
-        if not self.ignore_pir:
-            io.setup(_pir_pin, io.IN)
+        # if not self.ignore_pir:
+        io.setup(_pir_pin, io.IN)
         io.setup(_mag_pin, io.IN, pull_up_down=io.PUD_UP)
         io.setup(_relay_pin, io.OUT, initial=io.HIGH)
         # make sure relay doesn't click when we start
@@ -149,7 +149,7 @@ class Monitor:
                 # something changed
                 self._current.pir = state.pir
                 self._current.mag = state.mag
-                self.publish(self._current)
+                self.publish(AttrDict(self._current))
 
             # pause
             # yield from sleep(self.read_interval)
