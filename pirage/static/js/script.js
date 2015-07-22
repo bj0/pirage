@@ -48,6 +48,11 @@ $(document).ready(function () {
     $("#pir").on("click", togglePir);
 
     $("#dweet").on("click", toggleDweet);
+
+    $("#image").on("click", function() {
+      var d = new Date();
+      $("#image").attr("src", "http://admin:taco@10.10.10.102/image/jpeg.cgi?"+d.getTime());
+    });
 });
 
 // No idea if this works, nor how to test it
