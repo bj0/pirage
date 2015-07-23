@@ -6,6 +6,7 @@ var lockUrl = "/set_lock";
 var pirUrl = "/set_pir";
 var dweetUrl = "/set_dweet"
 
+// add postJSON alias function for ajax call pushing json
 jQuery["postJSON"] = function( url, data, callback ) {
     // shift arguments if data argument was omitted
     if ( jQuery.isFunction( data ) ) {
@@ -23,6 +24,7 @@ jQuery["postJSON"] = function( url, data, callback ) {
     });
 };
 
+// big open/close garage button
 var GarageButton = React.createClass({
   handleClick: function(){
     console.log("garage clicked");
@@ -47,6 +49,7 @@ var GarageButton = React.createClass({
   }
 });
 
+// displays current garage status
 var StatusDisplay = React.createClass({
   render: function() {
     return (
@@ -76,6 +79,7 @@ var StatusDisplay = React.createClass({
   }
 });
 
+// displays camera image
 var GarageImage = React.createClass({
   getInitialState: function() {
     return {
@@ -99,6 +103,7 @@ var GarageImage = React.createClass({
   }
 });
 
+// toggle buttons for controlling features
 var ControlButtons = React.createClass({
   handleLockClick: function() {
     console.log("lock click");
@@ -163,6 +168,7 @@ var ControlButtons = React.createClass({
   }
 });
 
+// container for everything
 var Garage = React.createClass({
   getInitialState: function(){
     return {
