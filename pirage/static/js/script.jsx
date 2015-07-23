@@ -91,7 +91,9 @@ var GarageImage = React.createClass({
   },
   handleClick: function() {
     var d = new Date();
-    this.setState({ image_src: "http://admin:taco@10.10.10.102/image/jpeg.cgi"+d.getTime() })
+    var url = "http://admin:taco@10.10.10.102/image/jpeg.cgi?"+d.getTime();
+    console.log(url);
+    this.setState({ image_src: url })
   },
   render: function() {
     return (
