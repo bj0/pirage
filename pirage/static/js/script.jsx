@@ -86,9 +86,10 @@ var GarageImage = React.createClass({
       image_src: "http://admin:taco@10.10.10.102/image/jpeg.cgi"
     };
   },
-  componentDidMount: function() {
-    // setInterval(this.handleClick, 5000);
-  },
+  // componentDidMount: function() {
+  //   // we can periodically update the image here
+  //   setInterval(this.handleClick, 5000);
+  // },
   handleClick: function() {
     var d = new Date();
     var url = "http://admin:taco@10.10.10.102/image/jpeg.cgi?"+d.getTime();
@@ -105,33 +106,9 @@ var GarageImage = React.createClass({
   }
 });
 
+
 // toggle buttons for controlling features
 var ControlButtons = React.createClass({
-  handleLockClick: function() {
-    console.log("lock click");
-    $.postJSON(lockUrl, { locked: !this.props.locked },
-      function(data) {
-        console.log(data);
-        // $("#lock").attr("data-locked", data.locked);
-        // todo: update locked icon instantly?
-      });
-  },
-  handlePirClick: function() {
-    console.log("pir click");
-    $.postJSON(pirUrl, { enabled: !this.props.pir_enabled },
-      function(data) {
-        console.log(data);
-        // $("#pir").attr("data-pir-enabled", data.pir_enabled);
-      });
-  },
-  handleDweetClick: function() {
-    console.log("dweet click");
-    $.postJSON(dweetUrl, { enabled: !this.props.dweet_enabled },
-      function(data) {
-        console.log(data);
-        // $("#dweet").attr("data-dweet-enabled", data.dweet_enabled);
-      });
-  },
   render: function() {
     var dweet;
     if (this.props.dweet_enabled) {
@@ -146,21 +123,21 @@ var ControlButtons = React.createClass({
       <div className="pure-g">
       <div className='pure-u-1-3 tcenter'>
         <button className="pure-button"
-          onClick={this.handleLockClick}>
+          onClick={this.props.handleLockClick}>
           <i className={this.props.locked ? "fa fa-lock" : "fa fa-unlock"}></i>
           &nbsp; LOK
         </button>
       </div>
       <div className='pure-u-1-3 tcenter'>
         <button className="pure-button"
-          onClick={this.handlePirClick}>
+          onClick={this.props.handlePirClick}>
           <i className={this.props.pir_enabled ? "fa fa-eye" : "fa fa-eye-slash" }></i>
           &nbsp;PIR
         </button>
       </div>
       <div className='pure-u-1-3 tcenter'>
         <button className="pure-button"
-          onClick={this.handleDweetClick}>
+          onClick={this.props.handleDweetClick}>
           {dweet}
           &nbsp;dweet
         </button>
@@ -199,6 +176,30 @@ var Garage = React.createClass({
       locked: data.locked
     })
   },
+  handleLockClick: function() {
+    console.log("lock click");
+    $.postJSON(lockUrl, { locked: !this.state.locked },
+      function(data) {
+        console.log(data);
+        this.setState({ locked: data.locked })
+      }.bind(this));
+  },
+  handlePirClick: function() {
+    console.log("pir click");
+    $.postJSON(pirUrl, { enabled: !this.state.pir_enabled },
+      function(data) {
+        console.log(data);
+        this.setState({ pir_enabled: data.pir_enabled })
+      }.bind(this));
+  },
+  handleDweetClick: function() {
+    console.log("dweet click");
+    $.postJSON(dweetUrl, { enabled: !this.state.dweet_enabled },
+      function(data) {
+        console.log(data);
+        this.setState({ dweet_enabled: data.dweet_enabled });
+      }.bind(this));
+  },
   render: function() {
     return (
       <div>
@@ -211,7 +212,10 @@ var Garage = React.createClass({
       <ControlButtons
         dweet_enabled={this.state.dweet_enabled}
         pir_enabled={this.state.pir_enabled}
-        locked={this.state.locked}/>
+        locked={this.state.locked}
+        handlePirClick={this.handlePirClick}
+        handleDweetClick={this.handleDweetClick}
+        handleLockClick={this.handleLockClick} />
       <GarageImage />
       </div>
     );
