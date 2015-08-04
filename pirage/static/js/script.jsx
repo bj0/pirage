@@ -57,7 +57,7 @@ var StatusDisplay = React.createClass({
       <div className="pure-g">
         <div className="pure-u-1-4"></div>
         <div className="pure-u-1-4 tcenter">
-          { this.props.garage_open ? "CLOSED" : "OPEN"} for:
+          { this.props.garage_open ? "OPEN" : "CLOSED"} for:
         </div>
         <div className="pure-u-1-4">
           <div className="l-box">{this.props.last_change}</div>
@@ -91,8 +91,7 @@ var GarageImage = React.createClass({
   //   setInterval(this.handleClick, 5000);
   // },
   handleClick: function() {
-    var d = new Date();
-    var url = "http://admin:taco@10.10.10.102/image/jpeg.cgi?"+d.getTime();
+    var url = "http://admin:taco@10.10.10.102/image/jpeg.cgi?"+Date.now();
     console.log(url);
     this.setState({ image_src: url })
   },
@@ -163,7 +162,8 @@ var Garage = React.createClass({
     var eventSource = new EventSource(listenUrl);
     eventSource.onmessage = function (e) {
         this.updateState(JSON.parse(e.data));
-        $("#log").html(e.data);
+        this.setState({log:e.data});
+        // $("#log").html(e.data);
     }.bind(this);
   },
   updateState: function(data) {
@@ -173,7 +173,8 @@ var Garage = React.createClass({
       last_motion: data.times.last_pir,
       dweet_enabled: data.dweet_enabled,
       pir_enabled: data.pir_enabled,
-      locked: data.locked
+      locked: data.locked,
+      log: "hi"
     })
   },
   handleLockClick: function() {
@@ -217,6 +218,7 @@ var Garage = React.createClass({
         handleDweetClick={this.handleDweetClick}
         handleLockClick={this.handleLockClick} />
       <GarageImage />
+      <div id="log" style={{fontFamily: 'courier', fontSize: '0.75em' }}>{this.state.log}</div>
       </div>
     );
   }
