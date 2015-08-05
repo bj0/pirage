@@ -1,57 +1,31 @@
-body {
-    font-size: 4vmin;
-    font-family: sans-serif;
-    color: #333;
+.pure-button {
+  margin: 10px;
+  border-radius: 4px;
+  border: 1px outset rgba(0, 0, 0, 0.2);
+  width: 50px;
+  height: 38px;
 }
 
-button {
-    width: 40vw;
-    height: 40vw;
-    border: 1px solid #333;
-    background-color: #DDD;
-    border-radius: 50%;
-    margin: 10vh auto 0;
-    display: block;
-    cursor: pointer;
-    font-size: inherit;
-    text-transform: uppercase;
-    max-height: 40vh;
-    max-width: 40vh;
-    color: inherit;
-}
-.VisibleOpen,
-.VisibleClosed {
-    display: none;
+.pure-round {
+    height: 50px;
+    width: 220px;
+    border-radius: 10px;
 }
 
-[data-door-open=true] .VisibleOpen,
-.VisibleOpen[data-door-open=true] {
-    display: initial;
-}
-[data-door-open=false] .VisibleClosed,
-.VisibleClosed[data-door-open=false] {
-    display: initial;
+.center { display: block; margin-left: auto; margin-right: auto;}
+
+table {
+  margin: 10px;
+  margin-top: 20px;
 }
 
-div {
-    text-align: center;
-    padding: 1.25em 1.5em 0;
+.fa-stack {
+  margin: -9px -8px;
+  padding: 0px;
 }
 
-label {
-    float: left;
-}
-
-input {
-    font-size: inherit;
-    background-color: white;
-    text-align: center;
-    border: 1px solid #333;
-    width: 33vw;
-    float: right;
-    color: inherit;
-}
-
-span {
-    text-transform: uppercase;
+.pure-g > div {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
 }

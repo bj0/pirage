@@ -49,7 +49,7 @@ var GarageButton = React.createClass({
 var StatusDisplay = React.createClass({
   render: function() {
     return (
-      <table className="pure-table" style={{marginTop: '20px'}}>
+      <table className="pure-table">
         <tbody>
           <tr>
             <td>{ this.props.garage_open ? "open" : "closed" } for:</td>
@@ -161,17 +161,6 @@ var ControlButtons = React.createClass({
         <PirButton {...this.props} /><br/>
         <DweetButton {...this.props}/>
       </div>
-    //   <div className="pure-g">
-    //   <div className='pure-u-1-3 tcenter'>
-    //     <LockButton {...this.props}/>
-    //   </div>
-    //   <div className='pure-u-1-3 tcenter'>
-    //     <PirButton {...this.props} />
-    //   </div>
-    //   <div className='pure-u-1-3 tcenter'>
-    //     <DweetButton {...this.props}/>
-    //   </div>
-    // </div>
     );
   }
 });
