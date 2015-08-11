@@ -78,10 +78,10 @@ var GarageImage = React.createClass({
       loaded: false
     };
   },
-  // componentDidMount: function() {
-  //   // we can periodically update the image here
-  //   setInterval(this.handleClick, 5000);
-  // },
+  componentDidMount: function() {
+    // we can periodically update the image here
+    setInterval(this.handleClick, 10000);
+  },
   handleClick: function() {
     var url = "http://admin:taco@10.10.10.102/image/jpeg.cgi?"+Date.now();
     console.log(url);
