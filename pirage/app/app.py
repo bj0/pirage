@@ -18,6 +18,7 @@ import subprocess as sp
 import re
 import argparse
 import requests
+from StringIO import StringIO
 
 from pirage.hardware import Monitor
 from pirage.garage import Garage
@@ -169,8 +170,11 @@ def camera(type):
     url = "http://admin:taco@10.10.10.102/image/jpeg.cgi"
     # url = "http://10.8.1.89/CGIProxy.fcgi?cmd=snapPicture2&usr=bdat&pwd=bdat&t="
     r = requests.get(url, stream=True)
-    return Response(stream_with_context(r.iter_content()),
-        content_type = r.headers['content-type'])
+    # return Response(stream_with_context(r.iter_content()),
+        # content_type = r.headers['content-type'])
+    buffer = StringIO(r.content)
+    buffer.seek(0)
+    return send_file(buffer, mimetype='image/jpeg')
 
 def get_data():
     '''
