@@ -73,17 +73,21 @@ var StatusDisplay = React.createClass({
 var GarageImage = React.createClass({
   getInitialState: function() {
     return {
-      image_src: "http://admin:taco@10.10.10.102/image/jpeg.cgi",
+      image_src: "/cam/image",
       altimage_src: "/static/images/loading.png",
       loaded: false
     };
   },
   componentDidMount: function() {
     // we can periodically update the image here
-    setInterval(this.handleClick, 10000);
+    setInterval(this.updateTick, 10000);
+  },
+  updateTick: function() {
+    if( this.state.loaded )
+      this.handleClick();
   },
   handleClick: function() {
-    var url = "http://admin:taco@10.10.10.102/image/jpeg.cgi?"+Date.now();
+    var url = "/cam/image?"+Date.now();
     console.log(url);
     if( this.state.loaded )
         this.setState({ image_src: url });
@@ -103,6 +107,7 @@ var GarageImage = React.createClass({
     return (
       <div style={{margin: '10px'}}>
         <img className="center" src={this.state.image_src} hidden={ !this.state.loaded }
+          width="320" height="240"
           onLoad={this.handleLoad}
           onError={this.handleError}
           onClick={this.handleClick} />
