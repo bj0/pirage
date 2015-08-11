@@ -85,7 +85,10 @@ var GarageImage = React.createClass({
   handleClick: function() {
     var url = "http://admin:taco@10.10.10.102/image/jpeg.cgi?"+Date.now();
     console.log(url);
-    this.setState({ image_src: url })
+    if( this.state.loaded )
+        this.setState({ image_src: url });
+    else
+        this.setState({ image_src: url, altimage_src: "/static/images/loading.png"});
   },
   handleError: function() {
     // called when image fails to load
