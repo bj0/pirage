@@ -232,7 +232,7 @@ var Garage = React.createClass({
     return (
       <div>
         <div className="pure-g">
-          <div className="pure-u-1-3">
+          <div className="pure-u-1-5">
             <ControlButtons
               dweet_enabled={this.state.dweet_enabled}
               pir_enabled={this.state.pir_enabled}
@@ -241,10 +241,10 @@ var Garage = React.createClass({
               handleDweetClick={this.handleDweetClick}
               handleLockClick={this.handleLockClick} />
           </div>
-          <div className="pure-u-1-3">
+          <div className="pure-u-2-5">
           <GarageImage />
           </div>
-          <div className="pure-u-1-3">
+          <div className="pure-u-2-5">
           <StatusDisplay
             garage_open={this.state.garage_open}
             last_change={this.state.last_change}
@@ -252,8 +252,13 @@ var Garage = React.createClass({
             temperature={this.state.temperature} />
         </div>
         </div>
-      <GarageButton
-        garage_open={this.state.garage_open} />
+        <div className="pure-g">
+          <div className="pure-u-1-5"/>
+          <div className="pure-u-2-5">
+          <GarageButton
+            garage_open={this.state.garage_open} />
+          </div>
+      </div>
       <div id="log" style={{fontFamily: 'courier', fontSize: '0.75em' }}>{this.state.log}</div>
       </div>
     );
