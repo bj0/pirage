@@ -128,10 +128,6 @@ app.debug = True
 def index():
     return render_template('index.html')
 
-@app.route('/dan/')
-def index2():
-    return render_template('index2.html')
-
 @app.route('/click', methods=['POST'])
 def click():
     app._g.toggle_door()

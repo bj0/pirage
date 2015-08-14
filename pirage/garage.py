@@ -71,21 +71,17 @@ class Garage:
         state.mag = not state.mag # since the door switch is "closed" when the door is "open"
         if state.mag != self.door_open:
             self.last_door_change = time.time()
+            if self.notify_task is not None:
+                self.notify_task.kill()
             if state.mag:
                 # door is now open!
                 self.notify("door open!")
                 if self.close_task is not None:
                     self.close_task.kill()
                     self.close_task = None
-                # self.close_task = async(self.close_after(self.close_delay))
                 if not self.locked:
                     self.close_task = spawn(self.close_after, self.close_delay)
 
-                if self.notify_task is not None:
-                    self.notify_task.kill()
-                # self.notify_task = async(self.notify_after(
-                #     "Garage is still open after {mag_open} minutes!",
-                #     self.notify_delay))
                 self.notify_task = spawn(self.notify_after,
                     "Garage is still open after {mag_open} minutes!",
                     self.notify_delay)

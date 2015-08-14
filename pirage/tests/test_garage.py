@@ -210,7 +210,7 @@ def test_garage_notify_on_left_open(fancysleep, monkeypatch, pir):
         g.update(AttrDict(pir=pir, mag=False))
 
         gevent.sleep(g.notify_delay-1)
-        notify.assert_not_called_with("Garage is still open after {mag_open} minutes!")
+        assert mock.call("Garage is still open after {mag_open} minutes!") not in notify.mock_calls
         gevent.sleep(1)
         notify.assert_called_with("Garage is still open after {mag_open} minutes!")
 
@@ -270,9 +270,10 @@ def test_garage_notify_canceled_after_close(fancysleep, monkeypatch):
         g.update(AttrDict(pir=True, mag=False))
 
         gevent.sleep(g.notify_delay-20)
-        notify.assert_not_called_with("Garage is still open after {mag_open} minutes!")
+        assert mock.call("Garage is still open after {mag_open} minutes!") not in notify.mock_calls
 
         # close door
         g.update(AttrDict(pir=True, mag=True))
         gevent.sleep(300)
-        notify.assert_not_called_with("Garage is still open after {mag_open} minutes!")
+        assert mock.call("Garage is still open after {mag_open} minutes!") not in notify.mock_calls
+        print ('WTF',notify.mock_calls)
