@@ -11,7 +11,7 @@ monkey.patch_all()
 # eventlet.monkey_patch()
 
 from flask import (Flask, render_template, Response, request, jsonify,
-    send_file, stream_with_context)
+                   send_file, stream_with_context)
 import time
 import json
 import subprocess as sp
@@ -25,11 +25,12 @@ from pirage.garage import Garage
 from pirage.util import AttrDict
 from pirage import dweet
 
+
 def create_app():
     app = Flask(__name__, static_folder='../static', static_url_path='/static')
 
     app._temp = 0
-    app._dweet = True
+    app._dweet = False
     app._last_mag_push = None
 
     app._clients = []
@@ -52,6 +53,7 @@ def create_app():
 
     return app
 
+
 def poll_temp():
     while True:
         try:
@@ -64,40 +66,52 @@ def poll_temp():
 
         sleep(30)
 
+
 def push_data(data):
     '''
     Push a set of data to listening clients.
     '''
     for q in list(app._clients):
-        q.put({
-            'times': {
-                'now':data.now,
-                'last_pir':data.last_pir_str,
-                'last_mag':data.last_mag_str
-            },
-            'pir': data.pir,
-            'mag': data.mag,
-            'temp': app._temp,
-            'locked': app._g.locked,
-            'pir_enabled': not app._hw.ignore_pir,
-            'dweet_enabled': app._dweet
-        })
+        q.put(data)
+
+
+def get_data():
+    '''
+    Grab data from garage and return it in dict format
+    '''
+    data = app._g.data
+    return {
+        'times': {
+            'now': data.now,
+            'last_pir': data.last_pir_str,
+            'last_mag': data.last_mag_str
+        },
+        'pir': data.pir,
+        'mag': data.mag,
+        'temp': app._temp,
+        'locked': app._g.locked,
+        'pir_enabled': not app._hw.ignore_pir,
+        'dweet_enabled': app._dweet
+    }
+
 
 def gen_data():
     '''
     Generate data to push to clients.
     '''
-    data = app._g.data
+    data = get_data()
     push_data(data)
 
     # dweet on mag change?
     if app._dweet and (app._last_mag_push != app._g.door_open):
-        do_dweet()
+        do_dweet(data)
 
-def do_dweet():
-    print ('dweet!')
-    #dweet.report('dat-pi-thang','secret-garden-k3y',data)
+
+def do_dweet(data):
+    print('dweet!')
+    dweet.report('dat-pi-thang', 'secret-garden-k3y', data)
     app._last_mag_push = app._g.door_open
+
 
 def poll():
     '''
@@ -107,13 +121,14 @@ def poll():
         gen_data()
         sleep(5)
 
+
 def gen_fake():
     '''generate fake data'''
     import random
     while True:
         push_data(AttrDict(
-            last_pir=random.randint(1,25),
-            last_mag=random.randint(1,7),
+            last_pir=random.randint(1, 25),
+            last_mag=random.randint(1, 7),
             pir=False,
             mag=True,
             locked=False,
@@ -124,14 +139,17 @@ def gen_fake():
 app = create_app()
 app.debug = True
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/click', methods=['POST'])
 def click():
     app._g.toggle_door()
     return ""
+
 
 @app.route('/set_lock', methods=['POST'])
 def lock():
@@ -140,12 +158,14 @@ def lock():
     app._g.lock(locked)
     return jsonify(locked=app._g.locked)
 
+
 @app.route('/set_pir', methods=['POST'])
 def set_pir():
     pir = request.get_json()['enabled']
     print('set pir:', pir)
     app._hw.ignore_pir = not pir
     return jsonify(pir_enabled=not app._hw.ignore_pir)
+
 
 @app.route('/set_dweet', methods=['POST'])
 def set_dweet():
@@ -156,9 +176,16 @@ def set_dweet():
         do_dweet()
     return jsonify(dweet_enabled=app._dweet)
 
+
 @app.route('/stream')
 def stream():
     return Response(get_data(), mimetype='text/event-stream')
+
+
+@app.route('/status')
+def get_status():
+    return jsonify(get_data())
+
 
 @app.route('/cam/<type>')
 def camera(type):
@@ -171,6 +198,7 @@ def camera(type):
     buffer = StringIO(r.content)
     buffer.seek(0)
     return send_file(buffer, mimetype='image/jpeg')
+
 
 def get_data():
     '''
@@ -189,21 +217,22 @@ def get_data():
         print('remove client')
         app._clients.remove(q)
 
+
 def main(**kwargs):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p','--port', type=int, help='server port',
-        default=kwargs.get('port',8245))
+    parser.add_argument('-p', '--port', type=int, help='server port',
+                        default=kwargs.get('port', 8245))
     parser.add_argument('--host', help='server host',
-        default=kwargs.get('host',''))
+                        default=kwargs.get('host', ''))
     parser.add_argument('--no-pir', help='disable pir sensor',
-        action='store_true',
-        default=kwargs.get('no_pir', False))
+                        action='store_true',
+                        default=kwargs.get('no_pir', False))
     parser.add_argument('--lock', help='disable auto closing garage',
-        action='store_true',
-        default=kwargs.get('lock', False))
+                        action='store_true',
+                        default=kwargs.get('lock', False))
     parser.add_argument('--dweet', help='dweet door changes',
-        action='store_true',
-        default=kwargs.get('no_dweet', False))
+                        action='store_true',
+                        default=kwargs.get('no_dweet', False))
     args = parser.parse_args()
 
     app._hw._use_pir = not args.no_pir
