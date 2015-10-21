@@ -179,7 +179,7 @@ def set_dweet():
 
 @app.route('/stream')
 def stream():
-    return Response(get_data(), mimetype='text/event-stream')
+    return Response(get_data_iter(), mimetype='text/event-stream')
 
 
 @app.route('/status')
@@ -200,7 +200,7 @@ def camera(type):
     return send_file(buffer, mimetype='image/jpeg')
 
 
-def get_data():
+def get_data_iter():
     '''
     pull data from queue and send it to the browser.
     '''

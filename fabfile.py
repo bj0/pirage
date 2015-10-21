@@ -8,7 +8,7 @@ env.hosts = ['pirage']
 project = 'https://github.com/bj0/pirage.git'
 
 def venv_run(cmd):
-    run('source ~/venv/bin/activate && {}'.format(cmd))
+    run('source ~/venvs/pirage/bin/activate && {}'.format(cmd))
 
 @task
 def setup_venv():
