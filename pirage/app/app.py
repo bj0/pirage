@@ -25,6 +25,8 @@ from pirage.garage import Garage
 from pirage.util import AttrDict
 from pirage import dweet
 
+import paho.mqtt.client as mqtt
+
 
 def create_app():
     app = Flask(__name__, static_folder='../static', static_url_path='/static')
@@ -105,6 +107,15 @@ def gen_data():
     # dweet on mag change?
     if app._dweet and (app._last_mag_push != app._g.door_open):
         do_dweet(data)
+        do_mqtt(app._g.door_open)
+
+def do_mqtt(self, door_open):
+    try:
+        client = mqtt.Client("pirage")
+        client.connect("bird.mx")
+        client.publish("pirage/door", door_open)
+    except Exception as e:
+        print("error mqtting: {}", e)
 
 
 def do_dweet(data):
