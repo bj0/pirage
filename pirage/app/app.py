@@ -23,9 +23,8 @@ from StringIO import StringIO
 from pirage.hardware import Monitor
 from pirage.garage import Garage
 from pirage.util import AttrDict
-from pirage import dweet
+from pirage import dweet, mqtt
 
-import paho.mqtt.client as mqtt
 
 
 def create_app():
@@ -109,11 +108,10 @@ def gen_data():
         do_dweet(data)
         do_mqtt(app._g.door_open)
 
-def do_mqtt(self, door_open):
+def do_mqtt(door_open):
     try:
-        client = mqtt.Client("pirage")
-        client.connect("bird.mx")
-        client.publish("pirage/door", door_open)
+        print("mqtt!")
+        mqtt.report("pirage/door", door_open)
     except Exception as e:
         print("error mqtting: {}", e)
 
