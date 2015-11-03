@@ -104,9 +104,11 @@ def gen_data():
     push_data(data)
 
     # dweet on mag change?
-    if app._dweet and (app._last_mag_push != app._g.door_open):
-        do_dweet(data)
+    if app._last_mag_push != app._g.door_open:
+        if app._dweet:
+            do_dweet(data)
         do_mqtt(app._g.door_open)
+        app._last_mag_push = app._g.door_open
 
 def do_mqtt(door_open):
     try:
@@ -119,7 +121,6 @@ def do_mqtt(door_open):
 def do_dweet(data):
     print('dweet!')
     dweet.report('dat-pi-thang', 'secret-garden-k3y', data)
-    app._last_mag_push = app._g.door_open
 
 
 def poll():
