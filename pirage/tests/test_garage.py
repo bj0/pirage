@@ -156,6 +156,37 @@ def test_garage_autoclose(fancysleep, monkeypatch):
         # garage door close called
         assert toggle.called
 
+def test_garage_no_autoopen(fancysleep, monkeypatch):
+    toggle = mock.MagicMock()
+    notify = mock.MagicMock()
+    monkeypatch.setattr('time.time', lambda: fancysleep.now)
+    fancysleep.patch('pirage.garage.sleep')
+
+    g = Garage(toggle)
+    g.notify = notify
+    # initial setup
+    g.update(AttrDict(pir=False, mag=False))
+
+    with fancysleep:
+        gevent.sleep(5)
+
+        # close door
+        g.update(AttrDict(pir=False, mag=True))
+
+        gevent.sleep(g.close_delay-1)
+        assert not toggle.called
+
+        gevent.sleep(5)
+
+        # garage door close not called
+        assert not toggle.called
+
+        gevent.sleep(1000)
+
+        # garage door close not called
+        assert not toggle.called
+
+
 def test_garage_autoclose_delayed_by_motion(fancysleep, monkeypatch):
     toggle = mock.MagicMock()
     monkeypatch.setattr('time.time', lambda: fancysleep.now)

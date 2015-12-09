@@ -89,6 +89,10 @@ class Garage:
             else:
                 # door is now closed!
                 self.notify("door closed!")
+                # clear auto-close task
+                if self.close_task is not None:
+                    self.close_task.kill()
+                    self.close_task = None
 
         # check pir
         if state.pir and not self.motion:
@@ -142,8 +146,11 @@ class Garage:
         # clear task since it can no longer be canceled
         self.close_task = None
 
-        # no longer delayed, close the door!
-        self.toggle_door()
+        # no longer delayed, close the door (only if open)!
+        if self.door_open:
+            self.toggle_door()
+        else:
+            self.notify("got auto-close on closed door!")
 
     # @coroutine
     def notify_after(self, message, seconds, repeat=True):
