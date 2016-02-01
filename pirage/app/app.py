@@ -23,7 +23,7 @@ from StringIO import StringIO
 from pirage.hardware import Monitor
 from pirage.garage import Garage
 from pirage.util import AttrDict
-from pirage import dweet, mqtt
+from pirage import dweet, mqtt, gcm
 
 
 
@@ -107,7 +107,8 @@ def gen_data():
     if app._last_mag_push != app._g.door_open:
         if app._dweet:
             do_dweet(data)
-        do_mqtt(app._g.door_open)
+        # do_mqtt(app._g.door_open)
+        do_gcm(data)
         app._last_mag_push = app._g.door_open
 
 def do_mqtt(door_open):
@@ -122,6 +123,9 @@ def do_dweet(data):
     print('dweet!')
     dweet.report('dat-pi-thang', 'secret-garden-k3y', data)
 
+def do_gcm(data):
+    print('gcm!')
+    gcm.report('pirage', data)
 
 def poll():
     '''
