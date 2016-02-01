@@ -6,19 +6,22 @@ env.use_ssh_config = True
 env.hosts = ['pirage']
 
 project = 'https://github.com/bj0/pirage.git'
+remote_venv = '/home/pi/venvs/pirage'
+remote_project = '/home/pi/pirage'
 
 def venv_run(cmd):
-    run('source ~/venvs/pirage/bin/activate && {}'.format(cmd))
+    '''run command inside virtual enviroment'''
+    run('source {}/bin/activate && {}'.format(remote_venv, cmd))
 
-@task
-def setup_venv():
-    with cd('~/pirage'):
-        run('virtualenv venv')
-        venv_run('pip install -r requirements.txt')
+#@task
+#def setup_venv():
+#    with cd(remote_project):
+#        run('virtualenv venv')
+#        venv_run('pip install -r requirements.txt')
 
 @task
 def pirage():
-    with cd('~/pirage'):
+    with cd(remote_project):
         venv_run('python run.py')
 
 @task
@@ -28,14 +31,29 @@ def clone():
 
 @task
 def pull():
-    with cd('~/pirage'):
+    with cd(remote_project):
         run('git pull')
+
+@task
+def start():
+    sudo('supervicorctl start pirage')
+
+@task
+def stop():
+    sudo('supervisorctl stop pirage')
 
 @task
 def restart():
     sudo("supervisorctl restart pirage")
-    sudo("supervisorctl status")
+    #sudo("supervisorctl status")
 
 @task
-def check():
+def status():
     sudo("supervisorctl status")
+
+
+@task
+def update():
+    '''pull down and restart pirage'''
+    pull()
+    restart()
