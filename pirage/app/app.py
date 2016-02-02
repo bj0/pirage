@@ -1,10 +1,9 @@
 from __future__ import absolute_import
-
-import gevent
-from gevent import monkey, sleep, spawn
+from gevent import monkey
+monkey.patch_all()
+from gevent import sleep, spawn
 from gevent.queue import Queue
 from gevent.pywsgi import WSGIServer
-monkey.patch_all()
 # import eventlet
 # from eventlet import sleep, spawn, wsgi
 # from eventlet.queue import Queue
