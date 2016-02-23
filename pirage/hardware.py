@@ -38,13 +38,14 @@ author:: Brian Parma <execrable@gmail.com>
 '''
 
 # from asyncio import coroutine, async, sleep, get_event_loop
-from __future__ import print_function
-from gevent import spawn, sleep
+#from __future__ import print_function
+#from gevent import spawn, sleep
+import asyncio as aio
 try:
     import RPi.GPIO as io
 except:
     # mock GPIO for running on desktop
-    print('no RPi.GPIO, mocking')
+    logging.warning('no RPi.GPIO, mocking')
     from mock import MagicMock
     from itertools import cycle
     io = MagicMock()
@@ -84,7 +85,6 @@ class Monitor:
     '''
     def __init__(self):
         self._callbacks = []
-        self.running = None
         self._current = AttrDict(mag=None, pir=None)
         self._run_task = None
         self._ignore_pir = False
@@ -111,36 +111,35 @@ class Monitor:
         self._ignore_pir = value
 
     def start(self):
-        '''
-        Start monitoring sensors.
-        '''
-        if not self.running:
-            self._run_task = spawn(self.run)
+        """
+        Start monitoring sensors.  Returns the task containing the monitoring loop,
+        which does not complete until the monitor is stopped.
+        """
+        if self._run_task is None or not self._run_task.done():
+            self._run_task = aio.ensure_future(self.run())
 
         # return the task so it can be watched
         return self._run_task
 
-    def stop(self):
+    async def stop(self):
         '''
-        Stop monitoring sensors.
-        '''
-        if self.running is not None:
-            # self.running.cancel()
-            self.running = False
-            self._run_task.kill()
-            self._run_task = None
+        Stop monitoring sensors.  Awaits completion of the monitoring loop task.
 
-    #@threaded
-    # @coroutine
-    def run(self):
+        This is a coroutine.
+        '''
+        if self._run_task is not None:
+            self._run_task.cancel()
+
+        await aio.wait((self._run_task,))
+
+    async def run(self):
         '''
         Read the sensors every interval and publish any changes.  Runs until canceled.
 
-        This is a @coroutine
+        This is a coroutine
         '''
 
-        self.running = True
-        while self.running:
+        while True:
             # read current sensors
             state = self._read_sensors()
             if self._current.mag != state.mag or \
@@ -153,7 +152,7 @@ class Monitor:
 
             # pause
             # yield from sleep(self.read_interval)
-            sleep(self.read_interval)
+            await aio.sleep(self.read_interval)
 
         # monitoring stopped
         self._current = AttrDict(mag=None, pir=None)
@@ -178,13 +177,15 @@ class Monitor:
             cb(*args, **kwargs)
 
     # @coroutine
-    def toggle_relay(self):
+    async def toggle_relay(self):
         '''
         Flip the relay on for 0.5s to simulate a "button press"
+
+        This is a coroutine.
         '''
         io.output(_relay_pin, io.LOW)
         # yield return sleep(0.5)
-        sleep(0.5)
+        await aio.sleep(0.5)
         io.output(_relay_pin, io.HIGH)
 
     def _read_sensors(self):
@@ -196,30 +197,35 @@ class Monitor:
 
 if __name__ == '__main__':
     # run stand alone to interactively test the hardware interaction
-    # options:
-    # - gevent with patched raw_input/input (no py3)
-    # - eventlet with aioeventlet (works with py3 and asyncio), what about input?
-    # - pure asyncio? what about input?
-    from gevent import monkey, spawn
-    monkey.patch_sys()
 
-    m = Monitor()
+    import sys
+    # this accepts input without blocking
+    loop = aio.get_event_loop()
+    q = aio.Queue()
+    def got_input():
+        aio.ensure_future(q.put(sys.stdin.readline()))
+    loop.add_reader(sys.stdin, got_input)
 
-    # this accepts input without blocking gevent
-    def prompt(msg):
+    async def prompt(msg):
         print(msg)
-        while True:
-            cmd = raw_input().lower()
-            if cmd == 'q':
-                break
-            elif cmd == 'r':
-                m.toggle_relay()
-            else:
-                print('unknown cmd')
+        return (await q.get()).rstrip('\n')
 
-    # print on input change
-    m.register(lambda *x: print('pub:',*x))
-    m.start()
-    gt = spawn(prompt("enter q to quit, r to relay"))
-    gt.join()
-    m.stop()
+
+    async def main():
+        m = Monitor()
+        # print on input change
+        m.register(lambda *x: print('pub:',*x))
+        m.start()
+
+        while True:
+            c = await prompt("enter q to quit, r to relay")
+            if c.startswith('r'):
+                await m.toggle_relay()
+            elif c.startswith('q'):
+                break
+
+        #gt.join()
+        await m.stop()
+
+    loop.run_until_complete(main())
+    loop.close()
