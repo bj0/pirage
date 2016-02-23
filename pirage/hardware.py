@@ -133,11 +133,11 @@ class Monitor:
         await aio.wait((self._run_task,))
 
     async def run(self):
-        '''
+        """
         Read the sensors every interval and publish any changes.  Runs until canceled.
 
         This is a coroutine
-        '''
+        """
 
         while True:
             # read current sensors

@@ -4,7 +4,7 @@ var postUrl = "/click";
 var listenUrl = "/stream";
 var lockUrl = "/set_lock";
 var pirUrl = "/set_pir";
-var dweetUrl = "/set_dweet"
+var notifyUrl = "/set_notify"
 
 // add postJSON alias function for ajax call pushing json
 jQuery["postJSON"] = function( url, data, callback ) {
@@ -119,21 +119,21 @@ var GarageImage = React.createClass({
 });
 
 // toggle buttons for controlling features
-var DweetButton = React.createClass({
+var NotifyButton = React.createClass({
   render: function() {
-    var dweet;
-    if (this.props.dweet_enabled) {
-      dweet = <i className="fa fa-whatsapp"></i>;
+    var notify;
+    if (this.props.notify_enabled) {
+      notify = <i className="fa fa-whatsapp"></i>;
     } else {
-      dweet = <span className="fa-stack">
+      notify = <span className="fa-stack">
                 <i className="fa fa-whatsapp fa-stack-1x"></i>
                 <i className="fa fa-ban fa-stack-1x"></i>
               </span>;
     }
     return (
       <button className="pure-button fa-button"
-        onClick={this.props.handleDweetClick}>
-        {dweet}
+        onClick={this.props.handleNotifyClick}>
+        {notify}
       </button>
     )
   }
@@ -167,7 +167,7 @@ var ControlButtons = React.createClass({
       <div style={{textAlign:'right', marginTop: '10px'}}>
         <LockButton {...this.props}/><br/>
         <PirButton {...this.props} /><br/>
-        <DweetButton {...this.props}/>
+        <NotifyButton {...this.props}/>
       </div>
     );
   }
@@ -180,24 +180,27 @@ var Garage = React.createClass({
       garage_open: true,
       last_change: 0,
       last_motion: 0,
-      dweet_enabled: true,
+      notify_enabled: true,
       pir_enabled: true,
       locked: false
     }
   },
   componentDidMount: function(){
+    console.log("eventsource");
     var eventSource = new EventSource(listenUrl);
     eventSource.onmessage = function (e) {
+        console.log("message");
         this.updateState(JSON.parse(e.data));
         this.setState({log:e.data});
     }.bind(this);
+    eventSource.onerror = function (e) { console.log("err:"+e); }
   },
   updateState: function(data) {
     this.setState({
       garage_open: data.mag,
       last_change: data.times.last_mag,
       last_motion: data.times.last_pir,
-      dweet_enabled: data.dweet_enabled,
+      notify_enabled: data.notify_enabled,
       pir_enabled: data.pir_enabled,
       locked: data.locked,
       temperature: data.temp,
@@ -220,12 +223,12 @@ var Garage = React.createClass({
         this.setState({ pir_enabled: data.pir_enabled })
       }.bind(this));
   },
-  handleDweetClick: function() {
-    console.log("dweet click");
-    $.postJSON(dweetUrl, { enabled: !this.state.dweet_enabled },
+  handleNotifyClick: function() {
+    console.log("notify click");
+    $.postJSON(notifyUrl, { enabled: !this.state.notify_enabled },
       function(data) {
         console.log(data);
-        this.setState({ dweet_enabled: data.dweet_enabled });
+        this.setState({ notify_enabled: data.notify_enabled });
       }.bind(this));
   },
   render: function() {
@@ -234,11 +237,11 @@ var Garage = React.createClass({
         <div className="pure-g">
           <div className="pure-u-1-5">
             <ControlButtons
-              dweet_enabled={this.state.dweet_enabled}
+              notify_enabled={this.state.notify_enabled}
               pir_enabled={this.state.pir_enabled}
               locked={this.state.locked}
               handlePirClick={this.handlePirClick}
-              handleDweetClick={this.handleDweetClick}
+              handleNotifyClick={this.handleNotifyClick}
               handleLockClick={this.handleLockClick} />
           </div>
           <div className="pure-u-2-5">
