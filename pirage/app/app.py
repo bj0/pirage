@@ -1,33 +1,45 @@
-from __future__ import absolute_import
-from gevent import monkey
-monkey.patch_all()
-from gevent import sleep, spawn
-from gevent.queue import Queue
-from gevent.pywsgi import WSGIServer
-# import eventlet
-# from eventlet import sleep, spawn, wsgi
-# from eventlet.queue import Queue
-# eventlet.monkey_patch()
+import asyncio as aio
+import asyncio.subprocess as sp
+import aiohttp
+from aiohttp import web
+from aiohttp.web import json_response
 
-from flask import (Flask, render_template, Response, request, jsonify,
-                   send_file, stream_with_context)
-import time
+import os
 import json
-import subprocess as sp
 import re
 import argparse
-import requests
-from StringIO import StringIO
+import logging
+import logging.handlers
 
 from pirage.hardware import Monitor
 from pirage.garage import Garage
-from pirage.util import AttrDict
-from pirage import dweet, mqtt, gcm
+from pirage.util import AttrDict, asynciter
+from pirage import gcm
 
+logging.basicConfig(level=logging.DEBUG)
+handler = logging.handlers.RotatingFileHandler('/tmp/pirage.log', mode='ab', backupCount=3, maxBytes=1024 * 1024)
+logging.getLogger().addHandler(handler)
+
+
+def index(request):
+    return web.HTTPFound(request.app.router['templates'].url(filename='index.html'))
 
 
 def create_app():
-    app = Flask(__name__, static_folder='../static', static_url_path='/static')
+    app = web.Application()
+
+    app.router.add_static('/static', os.path.join(os.path.dirname(os.path.realpath(__file__)), '../static'),
+                          name='static')
+    app.router.add_static('/templates', os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates'),
+                          name='templates')
+    app.router.add_route('GET', '/', index)
+    app.router.add_route('POST', '/click', click)
+    app.router.add_route('POST', '/set_lock', lock)
+    app.router.add_route('POST', '/set_pir', set_pir)
+    app.router.add_route('POST', '/set_dweet', set_dweet)
+    app.router.add_route('GET', '/stream', stream)
+    app.router.add_route('GET', '/status', get_status)
+    app.router.add_route('GET', '/cam/{type}', camera)
 
     app._temp = 0
     app._dweet = False
@@ -43,42 +55,45 @@ def create_app():
     # update garage when hw monitor gets changes
     app._hw.register(app._g.update)
     # update page when hw monitor gets changes
-    app._hw.register(lambda *x: gen_data())
+    app._hw.register(lambda *x: aio.ensure_future(gen_data()))
 
     app._hw.start()
     # periodically update page
-    spawn(poll)
+    aio.ensure_future(poll())
     # periodically get cpu temperature
-    spawn(poll_temp)
+    aio.ensure_future(poll_temp())
 
     return app
 
 
-def poll_temp():
+async def poll_temp():
+    """periodically read processor temperature using subprocess"""
     while True:
         try:
-            temp = sp.check_output('/opt/vc/bin/vcgencmd measure_temp'.split())
-            m = re.search('\d+(\.\d+)?', temp)
+            proc = aio.create_subprocess_exec(*'/opt/vc/bin/vcgencmd measure_temp'.split(), stdout=sp.PIPE)
+            await proc
+            data = await proc.stdout.read()
+            m = re.search('\d+(\.\d+)?', data)
             if m:
                 app._temp = float(m.group(0))
-        except Exception as ex:
-            print('no temp:', ex)
+        except Exception:
+            logging.warning('cannot get cpu temp', exc_info=True)
 
-        sleep(30)
+        await aio.sleep(30)
 
 
 def push_data(data):
-    '''
+    """
     Push a set of data to listening clients.
-    '''
+    """
     for q in list(app._clients):
-        q.put(data)
+        aio.ensure_future(q.put(data))
 
 
 def get_data():
-    '''
+    """
     Grab data from garage and return it in dict format
-    '''
+    """
     data = app._g.data
     return {
         'times': {
@@ -95,48 +110,50 @@ def get_data():
     }
 
 
-def gen_data():
-    '''
+async def gen_data():
+    """
     Generate data to push to clients.
-    '''
+    """
     data = get_data()
     push_data(data)
 
     # dweet on mag change?
     if app._last_mag_push != app._g.door_open:
-        if app._dweet:
-            do_dweet(data)
+        # if app._dweet:
+        # do_dweet(data)
         # do_mqtt(app._g.door_open)
         do_gcm(data)
         app._last_mag_push = app._g.door_open
 
-def do_mqtt(door_open):
-    try:
-        print("mqtt!")
-        mqtt.report("pirage/door", door_open)
-    except Exception as e:
-        print("error mqtting: {}", e)
+
+# def do_mqtt(door_open):
+#     try:
+#         print("mqtt!")
+#         mqtt.report("pirage/door", door_open)
+#     except Exception as e:
+#         print("error mqtting: {}", e)
 
 
-def do_dweet(data):
-    print('dweet!')
-    dweet.report('dat-pi-thang', 'secret-garden-k3y', data)
+# def do_dweet(data):
+#     logging.info('dweet!')
+#     dweet.report('dat-pi-thang', 'secret-garden-k3y', data)
 
 def do_gcm(data):
-    print('gcm!')
-    gcm.report('pirage', data)
+    logging.info('gcm!')
+    # gcm.report('pirage', data)
 
-def poll():
-    '''
+
+async def poll():
+    """
     Periodically update page data.
-    '''
+    """
     while True:
-        gen_data()
-        sleep(5)
+        await gen_data()
+        await aio.sleep(5)
 
 
-def gen_fake():
-    '''generate fake data'''
+async def gen_fake():
+    """generate fake data"""
     import random
     while True:
         push_data(AttrDict(
@@ -147,88 +164,114 @@ def gen_fake():
             locked=False,
             pir_enabled=True,
             dweet_enabled=False))
-        sleep(5)
-
-app = create_app()
-app.debug = True
+        await aio.sleep(5)
 
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+# app.debug = True
 
 
-@app.route('/click', methods=['POST'])
-def click():
-    app._g.toggle_door()
-    return ""
+# def _addroute(f, url, methods=['GET']):
+#     app.router.add_route(
+#         '*' if len(methods) > 1 else methods[0],
+#         url,
+#         f
+#     )
+#     return f
+# app.route = _addroute
 
 
-@app.route('/set_lock', methods=['POST'])
-def lock():
+# @app.route('/')
+# def index():
+#     return render_template('index.html')
+
+
+# @app.route('/click', methods=['POST'])
+def click(request):
+    request.app._g.toggle_door()
+    return web.Response()
+
+
+# @app.route('/set_lock', methods=['POST'])
+def lock(request):
     locked = request.json['locked']
-    print('set lock:', locked)
+    logging.info('set lock:', locked)
     app._g.lock(locked)
-    return jsonify(locked=app._g.locked)
+    return json_response(dict(locked=app._g.locked))
 
 
-@app.route('/set_pir', methods=['POST'])
-def set_pir():
+# @app.route('/set_pir', methods=['POST'])
+def set_pir(request):
     pir = request.get_json()['enabled']
-    print('set pir:', pir)
+    logging.info('set pir:', pir)
     app._hw.ignore_pir = not pir
-    return jsonify(pir_enabled=not app._hw.ignore_pir)
+    return json_response(dict(pir_enabled=not app._hw.ignore_pir))
 
 
-@app.route('/set_dweet', methods=['POST'])
-def set_dweet():
+# @app.route('/set_dweet', methods=['POST'])
+def set_dweet(request):
     dweet = request.get_json()['enabled']
-    print('set dweet:', dweet)
+    logging.info('set dweet:', dweet)
     app._dweet = dweet
-    if dweet:
-        do_dweet()
-    return jsonify(dweet_enabled=app._dweet)
+    # if dweet:
+    #     do_dweet()
+    return json_response(dict(dweet_enabled=app._dweet))
 
 
-@app.route('/stream')
-def stream():
-    return Response(get_data_iter(), mimetype='text/event-stream')
+# @app.route('/stream')
+async def stream(request):
+    response = web.StreamResponse(headers={
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+    })
+
+    await response.prepare(request)
+
+    async for data in get_aiter():
+        response.write(data)
+
+    return response
 
 
-@app.route('/status')
-def get_status():
-    return jsonify(get_data())
+# @app.route('/status')
+def get_status(request):
+    return json_response(get_data())
 
 
-@app.route('/cam/<type>')
-def camera(type):
-    '''
+# @app.route('/cam/{type}')
+async def camera(request):
+    """
     pull camera image from garage and return it
-    '''
-    url = "http://admin:taco@10.10.10.102/image/jpeg.cgi"
-    # url = "http://10.8.1.89/CGIProxy.fcgi?cmd=snapPicture2&usr=bdat&pwd=bdat&t="
-    r = requests.get(url, stream=True)
-    buffer = StringIO(r.content)
-    buffer.seek(0)
-    return send_file(buffer, mimetype='image/jpeg')
+    """
+    # url = "http://admin:taco@10.10.10.102/image/jpeg.cgi"
+    url = "http://10.8.1.89/CGIProxy.fcgi?cmd=snapPicture2&usr=bdat&pwd=bdat&t="
+    with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            return web.Response(body=await response.read())
 
 
-def get_data_iter():
-    '''
+@asynciter
+def get_aiter():
+    """
     pull data from queue and send it to the browser.
-    '''
-    yield 'retry: 10000\n\n'
-    q = Queue()
-    print('add client')
+    """
+    yield b'retry: 10000\n\n'
+    q = aio.Queue()
+    logging.info('add client')
     app._clients.append(q)
     try:
         while True:
-            for data in iter(q.get, 'nan'):
-                # print('got data:',data)
-                yield 'data: {}\n\n'.format(json.dumps(data))
+            data = yield from q.get()
+            if data == 'nan':
+                break
+            yield b'data: %b\n\n' % json.dumps(data).encode()
+
     finally:
-        print('remove client')
+        logging.info('remove client')
         app._clients.remove(q)
+
+
+app = create_app()
 
 
 def main(**kwargs):
@@ -252,7 +295,8 @@ def main(**kwargs):
     app._g.lock(args.lock)
     app._dweet = args.dweet
     try:
-        WSGIServer((args.host, args.port), app).serve_forever()
+        web.run_app(app, host=args.host, port=args.port)
+        # WSGIServer((args.host, args.port), app).serve_forever()
     finally:
         app._hw.stop()
         app._g.save()
