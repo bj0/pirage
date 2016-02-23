@@ -1,3 +1,4 @@
+import json
 import logging
 
 import aiohttp
@@ -18,24 +19,24 @@ def click(request):
     return web.Response()
 
 
-def lock(request):
-    locked = request.json['locked']
+async def lock(request):
+    locked = (await request.json())['locked']
     logging.info('set lock:', locked)
     g = request.app['garage']
     g.lock(locked)
     return json_response(dict(locked=g.locked))
 
 
-def set_pir(request):
-    pir = request.get_json()['enabled']
+async def set_pir(request):
+    pir = (await request.json())['enabled']
     logging.info('set pir:', pir)
     pi = request.app['pi']
     pi.ignore_pir = not pir
     return json_response(dict(pir_enabled=not pi.ignore_pir))
 
 
-def set_notify(request):
-    notify = request.get_json()['enabled']
+async def set_notify(request):
+    notify = (await request.json())['enabled']
     logging.info('set notify:', notify)
     request.app['notify'] = notify
     return json_response(dict(notify_enabled=notify))
@@ -45,8 +46,8 @@ async def camera(request):
     """
     pull camera image from garage and return it
     """
-    # url = "http://admin:taco@10.10.10.102/image/jpeg.cgi"
-    url = "http://10.8.1.89/CGIProxy.fcgi?cmd=snapPicture2&usr=bdat&pwd=bdat&t="
+    url = "http://admin:taco@10.10.10.102/image/jpeg.cgi"
+    # url = "http://10.8.1.89/CGIProxy.fcgi?cmd=snapPicture2&usr=bdat&pwd=bdat&t="
     with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             return web.Response(body=await response.read())
@@ -63,13 +64,13 @@ async def stream(request):
 
     logging.info('add stream client')
     q = aio.Queue()
-    app['clients'].append(q)
+    request.app['clients'].append(q)
     try:
         async for data in _get_aiter(q):
             response.write(data)
     finally:
         logging.info('remove stream client')
-        app['clients'].remove(q)
+        request.app['clients'].remove(q)
 
     return response
 
@@ -93,10 +94,11 @@ def _get_aiter(q):
         yield b'data: %b\n\n' % json.dumps(data).encode()
 
 
-def _pack(data):
+def _pack(app):
     """
-    Pack data from garage into a dict
+    Pack app/garage data into a dict
     """
+    data = app['garage'].data
     return {
         'times': {
             'now': data.now,
