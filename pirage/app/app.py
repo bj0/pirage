@@ -1,30 +1,27 @@
+import argparse
 import asyncio as aio
 import asyncio.subprocess as sp
-import aiohttp
-from aiohttp import web
-from aiohttp.web import json_response
-
-import os
-import json
-import re
-import argparse
 import logging
 import logging.handlers
+import os
+import re
 
-from pirage.hardware import Monitor
-from pirage.garage import Garage
-from pirage.util import AttrDict
+from aiohttp import web
 from pirage import gcm
-
+from pirage.garage import Garage
+from pirage.hardware import Monitor
+from pirage.util import AttrDict
 from . import handlers
 
-logging.basicConfig(level=logging.DEBUG)
+# configure logging
+rootLogger = logging.getLogger()
+rootLogger.setLevel(logging.DEBUG)
 handler = logging.handlers.RotatingFileHandler('/tmp/pirage.log', mode='ab', backupCount=3, maxBytes=1024 * 1024)
 handler.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-logging.getLogger().addHandler(ch)
-logging.getLogger().addHandler(handler)
+formatter = logging.Formatter('%(asctime)s:%(levelname)s:>%(name)s - %(message)s')
+handler.setFormatter(formatter)
+rootLogger.handlers[0].setFormatter(formatter)
+rootLogger.addHandler(handler)
 
 
 def create_app():
@@ -77,16 +74,16 @@ async def poll_temp():
             data = await proc.stdout.read()
             m = re.search('\d+(\.\d+)?', data)
             if m:
-                app._temp = float(m.group(0))
+                app['cpu_temp'] = float(m.group(0))
         except Exception:
-            logging.warning('cannot get cpu temp', exc_info=True)
+            logging.warning('cannot get cpu temp')
 
         await aio.sleep(30)
 
 
 def push_data(data):
     """
-    Push a set of data to listening clients.
+    Push a set of data to listening clients, concurrently.
     """
     for q in list(app['clients']):
         aio.ensure_future(q.put(data))
@@ -94,15 +91,16 @@ def push_data(data):
 
 async def gen_data(app):
     """
-    Generate data to push to clients.
+    Pack data and push to clients.  Send notification if door state changes.
     """
     data = handlers._pack(app)
     push_data(data)
 
     # notify on mag change?
-    print('last: ', app['last_push'], app['garage'].door_open)
+    logging.debug('last: %s, new: %s', app['last_push'], app['garage'].door_open)
     if app['last_push'] != app['garage'].door_open:
-        print(app['notify'])
+        logging.info("garage changed, %s notification!", "sending" if app['notify'] else "not sending")
+        # print(app['notify'])
         if app['notify']:
             do_gcm(data)
         app['last_push'] = app['garage'].door_open
@@ -117,12 +115,11 @@ async def gen_data(app):
 
 
 # def do_dweet(data):
-#     logging.info('dweeting {}', data)
+#     logging.info('dweeting %r', data)
 #     dweet.report('dat-pi-thang', 'secret-garden-k3y', data)
 
 def do_gcm(data):
-    logging.info('sending gcm: {}', data)
-    print('gcm')
+    logging.info('sending gcm: %s', data)
     gcm.report('pirage', data)
 
 
@@ -152,6 +149,7 @@ async def gen_fake():
 
 app = create_app()
 
+
 def main(**kwargs):
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, help='server port',
@@ -174,7 +172,6 @@ def main(**kwargs):
     app['notify'] = args.notify
     try:
         web.run_app(app, host=args.host, port=args.port)
-        # WSGIServer((args.host, args.port), app).serve_forever()
     finally:
         app['pi'].stop()
         app['garage'].save()
