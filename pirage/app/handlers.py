@@ -1,43 +1,68 @@
+import asyncio as aio
 import json
 import logging
 
 import aiohttp
 from aiohttp import web
 from aiohttp.web import json_response
-
-import asyncio as aio
-
 from pirage.util import asynciter
+
+logger = logging.getLogger(__name__)
 
 
 def index(request):
+    """
+    get the root index
+    :param request:
+    :return:
+    """
     return web.HTTPFound(request.app.router['templates'].url(filename='index.html'))
 
 
 def click(request):
+    """
+    toggles the garage door
+    :param request:
+    :return:
+    """
     request.app['garage'].toggle_door()
     return web.Response()
 
 
 async def lock(request):
+    """
+    set garage door lock
+    :param request:
+    :return:
+    """
     locked = (await request.json())['locked']
-    logging.info('set lock:', locked)
+    logger.info('set lock: %s', locked)
     g = request.app['garage']
     g.lock(locked)
     return json_response(dict(locked=g.locked))
 
 
 async def set_pir(request):
+    """
+    set pir sensor on/off
+    :param request:
+    :return:
+    """
     pir = (await request.json())['enabled']
-    logging.info('set pir:', pir)
+    logger.info('set pir: %s', pir)
     pi = request.app['pi']
     pi.ignore_pir = not pir
     return json_response(dict(pir_enabled=not pi.ignore_pir))
 
 
 async def set_notify(request):
+    """
+    set notification pushing on/off
+    :param request:
+    :return:
+    """
     notify = (await request.json())['enabled']
-    logging.info('set notify:', notify)
+    logger.info('set notify: %s', notify)
     request.app['notify'] = notify
     return json_response(dict(notify_enabled=notify))
 
@@ -54,6 +79,11 @@ async def camera(request):
 
 
 async def stream(request):
+    """
+    get a SSE session for live status updates
+    :param request:
+    :return:
+    """
     response = web.StreamResponse(headers={
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
@@ -62,14 +92,14 @@ async def stream(request):
 
     await response.prepare(request)
 
-    logging.info('add stream client')
+    logger.info('add stream client')
     q = aio.Queue()
     request.app['clients'].append(q)
     try:
         async for data in _get_aiter(q):
             response.write(data)
     finally:
-        logging.info('remove stream client')
+        logger.info('remove stream client')
         request.app['clients'].remove(q)
 
     return response
@@ -77,8 +107,12 @@ async def stream(request):
 
 # @app.route('/status')
 def get_status(request):
+    """
+    get current garage status
+    :param request:
+    :return:
+    """
     return json_response(_pack(request.app['garage'].data))
-
 
 
 @asynciter
