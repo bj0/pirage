@@ -2,9 +2,9 @@ import asyncio as aio
 
 import pytest
 
-from mock import MagicMock
+from unittest.mock import MagicMock
 from pirage.hardware import Monitor
-
+from .aiofastsleep import fastsleep
 
 @pytest.fixture(autouse=True)
 def gpio(monkeypatch):
@@ -174,7 +174,7 @@ async def test_toggle_relay(fastsleep, gpio):
     m = Monitor()
     gpio.output.reset_mock()
     # put it in a greenlet so we can step it
-    aio.ensure_future(toggle_relay())
+    aio.ensure_future(m.toggle_relay())
     await aio.sleep()  # step to pause
 
     gpio.output.assert_called_once_with(hw._relay_pin, gpio.LOW)
