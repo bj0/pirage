@@ -41,6 +41,8 @@ author:: Brian Parma <execrable@gmail.com>
 #from __future__ import print_function
 #from gevent import spawn, sleep
 import asyncio as aio
+import logging
+
 try:
     import RPi.GPIO as io
 except:
