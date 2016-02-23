@@ -20,6 +20,10 @@ from . import handlers
 
 logging.basicConfig(level=logging.DEBUG)
 handler = logging.handlers.RotatingFileHandler('/tmp/pirage.log', mode='ab', backupCount=3, maxBytes=1024 * 1024)
+handler.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+logging.getLogger().addHandler(ch)
 logging.getLogger().addHandler(handler)
 
 
@@ -40,7 +44,7 @@ def create_app():
     app.router.add_route('GET', '/cam/{type}', handlers.camera)
 
     app['cpu_temp'] = 0
-    app['notify'] = False
+    app['notify'] = True
     app['last_push'] = None
 
     app['clients'] = []
@@ -92,11 +96,13 @@ async def gen_data(app):
     """
     Generate data to push to clients.
     """
-    data = handlers._pack(app['garage'].data)
+    data = handlers._pack(app)
     push_data(data)
 
     # notify on mag change?
+    print('last: ', app['last_push'], app['garage'].door_open)
     if app['last_push'] != app['garage'].door_open:
+        print(app['notify'])
         if app['notify']:
             do_gcm(data)
         app['last_push'] = app['garage'].door_open
@@ -116,7 +122,8 @@ async def gen_data(app):
 
 def do_gcm(data):
     logging.info('sending gcm: {}', data)
-    # gcm.report('pirage', data)
+    print('gcm')
+    gcm.report('pirage', data)
 
 
 async def poll(app):
@@ -145,7 +152,6 @@ async def gen_fake():
 
 app = create_app()
 
-
 def main(**kwargs):
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, help='server port',
@@ -160,7 +166,7 @@ def main(**kwargs):
                         default=kwargs.get('lock', False))
     parser.add_argument('--notify', help='push door change notifications',
                         action='store_true',
-                        default=kwargs.get('no_notify', False))
+                        default=kwargs.get('no_notify', True))
     args = parser.parse_args()
 
     app['pi'].ignore_pir = args.no_pir
