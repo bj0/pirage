@@ -2,7 +2,7 @@ import argparse
 import asyncio as aio
 import asyncio.subprocess as sp
 import logging
-import logging.handlers
+import logging.config
 import os
 import re
 
@@ -14,23 +14,57 @@ from pirage.util import AttrDict
 from . import handlers
 
 # configure logging
-rootLogger = logging.getLogger()
-rootLogger.setLevel(logging.DEBUG)
-handler = logging.handlers.RotatingFileHandler('/tmp/pirage.log', mode='ab', backupCount=3, maxBytes=1024 * 1024)
-handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s:%(levelname)s:>%(name)s - %(message)s')
-handler.setFormatter(formatter)
-rootLogger.handlers[0].setFormatter(formatter)
-rootLogger.addHandler(handler)
+config = {
+    'version': 1,
+    'formatters': {
+        'norm': {
+            'format': '%(asctime)s:%(levelname)s:>%(name)s - %(message)s'
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'DEBUG',
+            'formatter': 'norm',
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/tmp/pirage.log',
+            'mode': 'ab',
+            'backupCount': 3,
+            'maxBytes': 1024 * 1024,
+            'level': 'DEBUG',
+            'formatter': 'norm',
+        },
+        'webfile': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/tmp/pirage.aiohttp.log',
+            'mode': 'ab',
+            'backupCount': 3,
+            'maxBytes': 1024 * 100,
+            'formatter': 'norm',
+            'level': 'DEBUG'
+        }
+    },
+    'loggers': {
+        'pirage': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+        'aiohttp': {
+            'handlers': ['webfile'],
+            'level': 'DEBUG'
+        }
+    },
+}
+logging.config.dictConfig(config)
+
+logger = logging.getLogger(__name__)
 
 
 def create_app():
     app = web.Application()
 
-    app.router.add_static('/static', os.path.join(os.path.dirname(os.path.realpath(__file__)), '../static'),
-                          name='static')
-    app.router.add_static('/templates', os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates'),
-                          name='templates')
     app.router.add_route('GET', '/', handlers.index)
     app.router.add_route('POST', '/click', handlers.click)
     app.router.add_route('POST', '/set_lock', handlers.lock)
@@ -39,6 +73,10 @@ def create_app():
     app.router.add_route('GET', '/stream', handlers.stream)
     app.router.add_route('GET', '/status', handlers.get_status)
     app.router.add_route('GET', '/cam/{type}', handlers.camera)
+    app.router.add_static('/static', os.path.join(os.path.dirname(os.path.realpath(__file__)), '../static'),
+                          name='static')
+    app.router.add_static('/', os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates'),
+                          name='templates')
 
     app['cpu_temp'] = 0
     app['notify'] = True
@@ -49,7 +87,7 @@ def create_app():
     # create hw monitor
     app['pi'] = Monitor()
     # create garage monitor that uses hw monitor to close garage
-    app['garage'] = Garage(app['pi'].toggle_relay)
+    app['garage'] = Garage(lambda *x: aio.ensure_future(app['pi'].toggle_relay()))
     app['garage'].load()
     # update garage when hw monitor gets changes
     app['pi'].register(app['garage'].update)
@@ -70,13 +108,13 @@ async def poll_temp():
     while True:
         try:
             proc = aio.create_subprocess_exec(*'/opt/vc/bin/vcgencmd measure_temp'.split(), stdout=sp.PIPE)
-            await proc
+            proc = await proc
             data = await proc.stdout.read()
             m = re.search('\d+(\.\d+)?', data)
             if m:
                 app['cpu_temp'] = float(m.group(0))
         except Exception as e:
-            logging.warning('cannot get cpu temp:', e)
+            logger.warning('cannot get cpu temp: %s', e)
 
         await aio.sleep(30)
 
@@ -97,9 +135,9 @@ async def gen_data(app):
     push_data(data)
 
     # notify on mag change?
-    logging.debug('last: %s, new: %s', app['last_push'], app['garage'].door_open)
+    logger.debug('last: %s, new: %s', app['last_push'], app['garage'].door_open)
     if app['last_push'] != app['garage'].door_open:
-        logging.info("garage changed, %s notification!", "sending" if app['notify'] else "not sending")
+        logger.info("garage changed, %s notification!", "sending" if app['notify'] else "not sending")
         # print(app['notify'])
         if app['notify']:
             do_gcm(data)
@@ -119,7 +157,7 @@ async def gen_data(app):
 #     dweet.report('dat-pi-thang', 'secret-garden-k3y', data)
 
 def do_gcm(data):
-    logging.info('sending gcm: %s', data)
+    logger.info('sending gcm: %s', data)
     gcm.report('pirage', data)
 
 

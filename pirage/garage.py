@@ -7,6 +7,8 @@ import time
 
 from .util import shelf, AttrDict
 
+logger = logging.getLogger(__name__)
+
 
 class Garage:
     """
@@ -170,11 +172,11 @@ class Garage:
             open="Open" if self.door_open else "Closed",
             mag_open=mag_open)
         print(message)
-        logging.info(message)
+        logger.info(message)
         # TODO email? dweet?
 
     def toggle_door(self):
-        logging.info('toggling door')
+        logger.info('toggling door')
         self._toggle()
 
     @property

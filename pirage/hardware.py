@@ -40,11 +40,13 @@ author:: Brian Parma <execrable@gmail.com>
 import asyncio as aio
 import logging
 
+logger = logging.getLogger(__name__)
+
 try:
     import RPi.GPIO as io
 except ImportError:
     # mock GPIO for running on desktop
-    logging.warning('no RPi.GPIO, mocking')
+    logger.warning('no RPi.GPIO, mocking')
     from unittest.mock import MagicMock
     from itertools import cycle
 
@@ -192,7 +194,6 @@ class Monitor:
         This is a coroutine.
         """
         io.output(_relay_pin, io.LOW)
-        # yield return sleep(0.5)
         await aio.sleep(0.5)
         io.output(_relay_pin, io.HIGH)
 
@@ -228,7 +229,7 @@ if __name__ == '__main__':
         while True:
             c = await prompt("enter q to quit, r to relay")
             if c.startswith('r'):
-                await toggle_relay()
+                await m.toggle_relay()
             elif c.startswith('q'):
                 break
 
