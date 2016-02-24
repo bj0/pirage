@@ -75,8 +75,8 @@ async def poll_temp():
             m = re.search('\d+(\.\d+)?', data)
             if m:
                 app['cpu_temp'] = float(m.group(0))
-        except Exception:
-            logging.warning('cannot get cpu temp')
+        except Exception as e:
+            logging.warning('cannot get cpu temp:', e)
 
         await aio.sleep(30)
 
