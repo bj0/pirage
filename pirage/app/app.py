@@ -33,7 +33,7 @@ config = {
             'mode': 'ab',
             'backupCount': 3,
             'maxBytes': 1024 * 1024,
-            'level': 'DEBUG',
+            'level': 'INFO',
             'formatter': 'norm',
         },
         'webfile': {

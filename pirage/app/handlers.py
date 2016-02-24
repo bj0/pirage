@@ -92,14 +92,14 @@ async def stream(request):
 
     await response.prepare(request)
 
-    logger.info('add stream client')
+    logger.info('add stream client (%s)', len(request.app['clients']) + 1)
     q = aio.Queue()
     request.app['clients'].append(q)
     try:
         async for data in _get_aiter(q):
             response.write(data)
     finally:
-        logger.info('remove stream client')
+        logger.info('remove stream client (%s)', len(request.app['clients']) - 1)
         request.app['clients'].remove(q)
 
     return response
