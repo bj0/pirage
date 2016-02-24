@@ -194,7 +194,7 @@ class Garage:
         last_pir = int(now - (self.last_motion or 0))
         last_mag = int(now - (self.last_door_change or 0))
         if last_pir > 60:
-            last_pir_str = '{} min'.format(last_pir / 60)
+            last_pir_str = '{} min'.format(last_pir // 60)
         else:
             last_pir_str = '{} sec'.format(last_pir)
 
