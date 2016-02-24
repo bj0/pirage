@@ -110,7 +110,7 @@ async def poll_temp():
             proc = aio.create_subprocess_exec(*'/opt/vc/bin/vcgencmd measure_temp'.split(), stdout=sp.PIPE)
             proc = await proc
             data = await proc.stdout.read()
-            m = re.search('\d+(\.\d+)?', data)
+            m = re.search(b'\d+(\.\d+)?', data)
             if m:
                 app['cpu_temp'] = float(m.group(0))
         except Exception as e:
