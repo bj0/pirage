@@ -44,12 +44,14 @@ logger = logging.getLogger(__name__)
 
 try:
     import RPi.GPIO as io
+    _fake = False
 except ImportError:
     # mock GPIO for running on desktop
     logger.warning('no RPi.GPIO, mocking')
     from unittest.mock import MagicMock
     from itertools import cycle
 
+    _fake = True
     io = MagicMock()
     io.HIGH = 1
     io.LOW = 0
@@ -93,7 +95,7 @@ class Monitor:
         self._run_task = None
         self._ignore_pir = False
 
-        self.read_interval = 2  # 2 second
+        self.read_interval = 2 if not _fake else 10  # 2 second, 10 if we are debugging to prevent spam
 
         # set number scheme
         io.setmode(io.BCM)
