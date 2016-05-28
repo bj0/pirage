@@ -112,7 +112,7 @@ def get_status(request):
     :param request:
     :return:
     """
-    return json_response(_pack(request.app['garage'].data))
+    return json_response(_pack(request.app))
 
 
 @asynciter
