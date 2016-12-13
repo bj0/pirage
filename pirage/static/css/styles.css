@@ -29,3 +29,11 @@ table {
   -moz-box-sizing: border-box;
   box-sizing: border-box;
 }
+
+.pad {
+    margin: 10px 0;
+}
+
+.hidden {
+    display: none
+}

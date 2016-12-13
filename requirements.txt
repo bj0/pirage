@@ -1,4 +1,6 @@
-Flask
-gevent
-dweepy
-paho-mqtt
+RPi.GPIO
+aiohttp
+python-gcm
+
+#dweepy
+#paho-mqtt
