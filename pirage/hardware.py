@@ -40,10 +40,13 @@ author:: Brian Parma <execrable@gmail.com>
 import asyncio as aio
 import logging
 
+from .util import AttrDict, create_task
+
 logger = logging.getLogger(__name__)
 
 try:
     import RPi.GPIO as io
+
     _fake = False
 except ImportError:
     # mock GPIO for running on desktop
@@ -61,8 +64,6 @@ except ImportError:
     io.input.side_effect = cycle((io.HIGH, io.LOW, io.HIGH, io.LOW, io.LOW))
     io.output = MagicMock()
     io.output.side_effect = lambda *x: print('out:', *x)
-
-from .util import AttrDict
 
 _pir_pin = 18
 _mag_pin = 23
@@ -122,7 +123,7 @@ class Monitor:
         which does not complete until the monitor is stopped.
         """
         if self._run_task is None or not self._run_task.done():
-            self._run_task = aio.ensure_future(self.run())
+            self._run_task = create_task(self.run())
 
         # return the task so it can be watched
         return self._run_task
@@ -211,7 +212,7 @@ if __name__ == '__main__':
 
 
     def got_input():
-        aio.ensure_future(q.put(sys.stdin.readline()))
+        create_task(q.put(sys.stdin.readline()))
 
 
     loop.add_reader(sys.stdin, got_input)

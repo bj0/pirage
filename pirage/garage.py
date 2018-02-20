@@ -5,7 +5,7 @@ import logging
 import os
 import time
 
-from .util import shelf, AttrDict
+from .util import shelf, AttrDict, create_task
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class Garage:
         elif self.close_task is None and self.door_open:
             # start up a close
             self.notify('starting up auto-close from unlock')
-            self.close_task = aio.ensure_future(self.close_after(self.close_delay))
+            self.close_task = create_task(self.close_after(self.close_delay))
 
     def save(self):
         """
@@ -118,7 +118,7 @@ class Garage:
         """
         if seconds <= self.close_warning:
             if seconds < 60:
-                self.notify("closing garage in {} seconds!", seconds)
+                self.notify("closing garage in {} seconds!".format(seconds))
             else:
                 self.notify("closing garage in {} minutes!".format(seconds / 60))
         else:
