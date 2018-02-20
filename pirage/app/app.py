@@ -111,12 +111,11 @@ async def poll_temp():
     """periodically read processor temperature using subprocess"""
     while True:
         try:
-            proc = aio.create_subprocess_exec(*'/opt/vc/bin/vcgencmd measure_temp'.split(), stdout=sp.PIPE)
-            proc = await proc
-            data = await proc.stdout.read()
-            m = re.search(b'\d+(\.\d+)?', data)
-            if m:
-                app['cpu_temp'] = float(m.group(0))
+            with open('/sys/class/thermal/thermal_zone0/temp', 'rt') as f:
+                data = f.readline()
+                if data:
+                    app['cpu_temp'] = float(data) / 1e3
+                    logger.debug(f'cpu temp: {app["cpu_temp"]}')
         except Exception as e:
             logger.warning('cannot get cpu temp: %s', e)
 
