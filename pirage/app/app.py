@@ -5,7 +5,10 @@ import logging
 import logging.config
 import os
 import re
+from pathlib import Path
 
+import aiohttp_jinja2
+import jinja2
 from aiohttp import web
 from pirage import fcm
 from pirage.garage import Garage
@@ -65,18 +68,19 @@ logger = logging.getLogger(__name__)
 def create_app():
     app = web.Application()
 
-    app.router.add_route('GET', '/', handlers.index)
-    app.router.add_route('POST', '/click', handlers.click)
-    app.router.add_route('POST', '/set_lock', handlers.lock)
-    app.router.add_route('POST', '/set_pir', handlers.set_pir)
-    app.router.add_route('POST', '/set_notify', handlers.set_notify)
-    app.router.add_route('GET', '/stream', handlers.stream)
-    app.router.add_route('GET', '/status', handlers.get_status)
-    app.router.add_route('GET', '/cam/{type}', handlers.camera)
-    app.router.add_static('/static', os.path.join(os.path.dirname(os.path.realpath(__file__)), '../static'),
+    app.router.add_get('/', handlers.index)
+    app.router.add_post('/click', handlers.click)
+    app.router.add_post('/set_lock', handlers.lock)
+    app.router.add_post('/set_pir', handlers.set_pir)
+    app.router.add_post('/set_notify', handlers.set_notify)
+    app.router.add_get('/stream', handlers.stream)
+    app.router.add_get('/status', handlers.get_status)
+    app.router.add_get('/cam/{type}', handlers.camera)
+    app.router.add_static('/static/', str(Path(__file__) / '../../static'),
                           name='static')
-    app.router.add_static('/', os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates'),
-                          name='templates')
+
+    aiohttp_jinja2.setup(app,
+                         loader=jinja2.PackageLoader('pirage.app', 'templates'))
 
     app['cpu_temp'] = 0
     app['notify'] = True

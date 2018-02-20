@@ -3,19 +3,21 @@ import json
 import logging
 
 import aiohttp
+import aiohttp_jinja2
 from aiohttp import web
 from aiohttp.web import json_response
 
 logger = logging.getLogger(__name__)
 
 
-def index(request):
+@aiohttp_jinja2.template('index.html')
+async def index(request):
     """
     get the root index
     :param request:
     :return:
     """
-    return web.HTTPFound(request.app.router['templates'].url(filename='index.html'))
+    return {}
 
 
 def click(request):
