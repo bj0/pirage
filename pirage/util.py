@@ -7,7 +7,7 @@ import tempfile
 from contextlib import contextmanager
 
 
-@PendingDeprecationWarning
+#@PendingDeprecationWarning
 def create_task(coro):
     """this should be DEPRECATED in 3.7, when this function will be added to asyncio"""
     return asyncio.get_event_loop().create_task(coro)

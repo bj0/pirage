@@ -4,6 +4,7 @@ import asyncio as aio
 import logging
 import os
 import time
+from pathlib import Path
 
 from .util import shelf, AttrDict, create_task
 
@@ -49,9 +50,10 @@ class Garage:
         """
         Save last sensor change times to disk.
         """
-        if not os.path.exists('/var/lib/pirage'):
-            os.makedirs('/var/lib/pirage')
-        with shelf('/var/lib/pirage/data.db') as s:
+        path = Path(Path.home(), ".pirage/")
+        if not path.exists():
+            path.mkdir()
+        with shelf(str(path / "data.db")) as s:
             s['state'] = {
                 'last_door_change': self.last_door_change,
                 'last_motion': self.last_motion,
