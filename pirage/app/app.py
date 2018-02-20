@@ -196,7 +196,7 @@ def main(**kwargs):
     parser.add_argument('-p', '--port', type=int, help='server port',
                         default=kwargs.get('port', 8245))
     parser.add_argument('--host', help='server host',
-                        default=kwargs.get('host', ''))
+                        default=kwargs.get('host', '0.0.0.0'))
     parser.add_argument('--no-pir', help='disable pir sensor',
                         action='store_true',
                         default=kwargs.get('no_pir', False))
