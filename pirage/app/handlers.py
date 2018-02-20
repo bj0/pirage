@@ -98,7 +98,7 @@ async def stream(request):
     request.app['clients'].append(q)
     try:
         async for data in _get_aiter(q):
-            response.write(data)
+            await response.write(data)
     finally:
         logger.info('remove stream client (%s)', len(request.app['clients']) - 1)
         request.app['clients'].remove(q)
