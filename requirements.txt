@@ -1,6 +1,6 @@
 RPi.GPIO
 aiohttp
-python-gcm
+pyfcm
 
 #dweepy
 #paho-mqtt

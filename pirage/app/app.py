@@ -7,7 +7,7 @@ import os
 import re
 
 from aiohttp import web
-from pirage import gcm
+from pirage import fcm
 from pirage.garage import Garage
 from pirage.hardware import Monitor
 from pirage.util import AttrDict
@@ -140,7 +140,7 @@ async def gen_data(app):
         logger.info("garage changed, %s notification!", "sending" if app['notify'] else "not sending")
         # print(app['notify'])
         if app['notify']:
-            do_gcm(data)
+            do_fcm(data)
         app['last_push'] = app['garage'].door_open
 
 
@@ -156,9 +156,9 @@ async def gen_data(app):
 #     logging.info('dweeting %r', data)
 #     dweet.report('dat-pi-thang', 'secret-garden-k3y', data)
 
-def do_gcm(data):
+def do_fcm(data):
     logger.info('sending gcm: %s', data)
-    gcm.report('pirage', data)
+    fcm.report('pirage', data)
 
 
 async def poll(app):
