@@ -5,7 +5,6 @@ import logging
 import aiohttp
 from aiohttp import web
 from aiohttp.web import json_response
-from pirage.util import asynciter
 
 logger = logging.getLogger(__name__)
 
@@ -115,14 +114,13 @@ def get_status(request):
     return json_response(_pack(request.app))
 
 
-@asynciter
-def _get_aiter(q):
+async def _get_aiter(q):
     """
     Turn an asyncio.Queue into an EventStream async iterator
     """
     yield b'retry: 10000\n\n'
     while True:
-        data = yield from q.get()
+        data = await q.get()
         if data == 'nan':
             break
         yield b'data: %b\n\n' % json.dumps(data).encode()

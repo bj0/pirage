@@ -1,8 +1,12 @@
+import asyncio
 import asyncio as aio
 import inspect
 import shelve
-import tempfile, shutil
+import shutil
+import tempfile
 from contextlib import contextmanager
+
+
 
 
 @contextmanager
@@ -35,12 +39,16 @@ class AttrDict(dict):
         self.__dict__ = self
 
 
+@DeprecationWarning
 class AsyncGenerator:
     """
     Class decorator that turns a coroutine into an async iterator.
 
     The decorated coroutine will take a special 'put' function in addition
     to it's normal arguments, this is used to 'push' data out the iterator.
+
+    DEPRECATED: no longer necessary in 3.6: https://docs.python.org/3.6/whatsnew/3.6.html#pep-525-asynchronous-generators
+
     """
 
     def __init__(self, f):
@@ -87,7 +95,11 @@ class AsyncGenerator:
         raise StopAsyncIteration
 
 
+@DeprecationWarning
 class AsyncIterator:
+    """DEPRECATED: no longer necessary after 3.6:
+    https://docs.python.org/3.6/whatsnew/3.6.html#pep-525-asynchronous-generators """
+
     def __init__(self, iterator):
         self.iter = iterator
 
@@ -110,5 +122,8 @@ class AsyncIterator:
             raise StopAsyncIteration
 
 
+@DeprecationWarning
 def asynciter(f):
+    """DEPRECATED: no longer necessary after 3.6:
+    https://docs.python.org/3.6/whatsnew/3.6.html#pep-525-asynchronous-generators """
     return lambda *args, **kwargs: AsyncIterator(f(*args, **kwargs))
