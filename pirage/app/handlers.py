@@ -26,6 +26,7 @@ def click(request):
     :param request:
     :return:
     """
+    logger.info('click')
     request.app['garage'].toggle_door()
     return web.Response()
 
@@ -37,7 +38,7 @@ async def lock(request):
     :return:
     """
     locked = (await request.json())['locked']
-    logger.info('set lock: %s', locked)
+    logger.info(f'set lock: {locked}')
     g = request.app['garage']
     g.lock(locked)
     return json_response(dict(locked=g.locked))
@@ -50,7 +51,7 @@ async def set_pir(request):
     :return:
     """
     pir = (await request.json())['enabled']
-    logger.info('set pir: %s', pir)
+    logger.info(f'set pir: {pir}')
     pi = request.app['pi']
     pi.ignore_pir = not pir
     return json_response(dict(pir_enabled=not pi.ignore_pir))
@@ -63,7 +64,7 @@ async def set_notify(request):
     :return:
     """
     notify = (await request.json())['enabled']
-    logger.info('set notify: %s', notify)
+    logger.info(f'set notify: {notify}')
     request.app['notify'] = notify
     return json_response(dict(notify_enabled=notify))
 
@@ -72,6 +73,7 @@ async def camera(request):
     """
     pull camera image from garage and return it
     """
+    logger.info('camera')
     url = "http://admin:taco@10.10.10.102/image/jpeg.cgi"
     # url = "http://10.8.1.89/CGIProxy.fcgi?cmd=snapPicture2&usr=bdat&pwd=bdat&t="
     with aiohttp.ClientSession() as session:
@@ -113,6 +115,7 @@ def get_status(request):
     :param request:
     :return:
     """
+    logger.info('status')
     return json_response(_pack(request.app))
 
 
