@@ -76,7 +76,7 @@ async def camera(request):
     logger.info(f'camera: {request}')
     url = "http://admin:taco@10.10.10.201/image/jpeg.cgi"
     # url = "http://10.8.1.89/CGIProxy.fcgi?cmd=snapPicture2&usr=bdat&pwd=bdat&t="
-    with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             return web.Response(body=await response.read())
 
