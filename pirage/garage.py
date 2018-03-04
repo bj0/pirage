@@ -46,7 +46,7 @@ class Garage:
             self.notify('starting up auto-close from unlock')
             self.close_task = create_task(self.close_after(self.close_delay))
 
-    def save(self):
+    def save(self, **extra):
         """
         Save last sensor change times to disk.
         """
@@ -54,21 +54,25 @@ class Garage:
         if not path.exists():
             path.mkdir()
         with shelf(str(path / "data.db")) as s:
-            s['state'] = {
-                'last_door_change': self.last_door_change,
-                'last_motion': self.last_motion,
-            }
+            s['state'] = dict(
+                last_door_change=self.last_door_change,
+                last_motion=self.last_motion,
+                locked=self.locked,
+                **extra)
 
     def load(self):
         """
         Load last sensor change times to disk.
         """
-        if not os.path.exists('/var/lib/pirage'):
+        path = Path(Path.home(), ".pirage/")
+        if not path.exists():
             return
-        with shelf('/var/lib/pirage/data.db') as s:
+        with shelf(str(path / "data.db")) as s:
             d = s.get('state', {})
             self.last_door_change = d.get('last_door_change', None)
             self.last_motion = d.get('last_motion', None)
+            self.locked = d.get('locked', False)
+            return d
 
     def update(self, state):
         # check door

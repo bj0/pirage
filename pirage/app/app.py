@@ -83,7 +83,6 @@ def create_app():
                          loader=jinja2.PackageLoader('pirage.app', 'templates'))
 
     app['cpu_temp'] = 0
-    app['notify'] = True
     app['last_push'] = None
 
     app['clients'] = []
@@ -91,8 +90,12 @@ def create_app():
     # create hw monitor
     app['pi'] = Monitor()
     # create garage monitor that uses hw monitor to close garage
-    app['garage'] = Garage(lambda *x: aio.ensure_future(app['pi'].toggle_relay()))
-    app['garage'].load()
+    app['garage'] = Garage(lambda *x: create_task(app['pi'].toggle_relay()))
+
+    # load saved state
+    extra = app['garage'].load()
+    app['notify'] = extra.get('notify', True)
+
     # update garage when hw monitor gets changes
     app['pi'].register(app['garage'].update)
     # update page when hw monitor gets changes
