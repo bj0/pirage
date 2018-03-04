@@ -1,19 +1,16 @@
 import argparse
 import asyncio as aio
-import asyncio.subprocess as sp
-import logging
 import logging.config
-import os
-import re
 from pathlib import Path
 
 import aiohttp_jinja2
 import jinja2
 from aiohttp import web
+
 from pirage import fcm
 from pirage.garage import Garage
 from pirage.hardware import Monitor
-from pirage.util import AttrDict
+from pirage.util import AttrDict, create_task
 from . import handlers
 
 # configure logging
@@ -84,11 +81,11 @@ def create_app():
 
     app['cpu_temp'] = 0
     app['last_push'] = None
-
     app['clients'] = []
 
     # create hw monitor
     app['pi'] = Monitor()
+
     # create garage monitor that uses hw monitor to close garage
     app['garage'] = Garage(lambda *x: create_task(app['pi'].toggle_relay()))
 
@@ -98,20 +95,23 @@ def create_app():
 
     # update garage when hw monitor gets changes
     app['pi'].register(app['garage'].update)
-    # update page when hw monitor gets changes
-    app['pi'].register(lambda *x: aio.ensure_future(gen_data(app)))
 
+    # update page when hw monitor gets changes
+    app['pi'].register(lambda *x: create_task(gen_data(app)))
+
+    # start hardware
     app['pi'].start()
+
     # periodically update page
-    aio.ensure_future(poll(app))
+    create_task(poll(app))
     # periodically get cpu temperature
-    aio.ensure_future(poll_temp())
+    create_task(poll_temp())
 
     return app
 
 
 async def poll_temp():
-    """periodically read processor temperature using subprocess"""
+    """periodically read processor temperature from /sys/class/thermal"""
     while True:
         try:
             with open('/sys/class/thermal/thermal_zone0/temp', 'rt') as f:
@@ -130,7 +130,7 @@ def push_data(data):
     Push a set of data to listening clients, concurrently.
     """
     for q in list(app['clients']):
-        aio.ensure_future(q.put(data))
+        create_task(q.put(data))
 
 
 async def gen_data(app):
@@ -140,11 +140,10 @@ async def gen_data(app):
     data = handlers._pack(app)
     push_data(data)
 
-    # notify on mag change?
+    # notify on door change
     logger.debug('last: %s, new: %s', app['last_push'], app['garage'].door_open)
     if app['last_push'] != app['garage'].door_open:
         logger.info("garage changed, %s notification!", "sending" if app['notify'] else "not sending")
-        # print(app['notify'])
         if app['notify']:
             do_fcm(data)
         app['last_push'] = app['garage'].door_open
@@ -163,7 +162,7 @@ async def gen_data(app):
 #     dweet.report('dat-pi-thang', 'secret-garden-k3y', data)
 
 def do_fcm(data):
-    logger.info('sending gcm: %s', data)
+    logger.info('sending fcm: %s', data)
     fcm.report('pirage', data)
 
 
@@ -218,7 +217,7 @@ def main(**kwargs):
         web.run_app(app, host=args.host, port=args.port)
     finally:
         app['pi'].stop()
-        app['garage'].save()
+        app['garage'].save(notify=app['notify'])
 
 
 if __name__ == '__main__':

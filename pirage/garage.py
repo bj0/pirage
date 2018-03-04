@@ -89,9 +89,9 @@ class Garage:
                     self.close_task.cancel()
                     self.close_task = None
                 if not self.locked:
-                    self.close_task = aio.ensure_future(self.close_after(self.close_delay))
+                    self.close_task = create_task(self.close_after(self.close_delay))
 
-                self.notify_task = aio.ensure_future(self.notify_after(
+                self.notify_task = create_task(self.notify_after(
                     "Garage is still open after {mag_open} minutes!",
                     self.notify_delay))
 
