@@ -77,6 +77,8 @@ class Garage:
     def update(self, state):
         # check door
         # state.mag = not state.mag  # since the door switch is "closed" when the door is "open"
+        state.mag = bool(state.mag)
+        state.pir = bool(state.pir)
         if state.mag != self.door_open:
             self.last_door_change = time.time()
             if self.notify_task is not None:
