@@ -65,7 +65,7 @@ class Garage:
         """
         path = Path(Path.home(), ".pirage/")
         if not path.exists():
-            return
+            return {}
         with shelf(str(path / "data.db")) as s:
             d = s.get('state', {})
             self.last_door_change = d.get('last_door_change', None)
