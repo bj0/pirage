@@ -2,7 +2,6 @@
 
 import asyncio as aio
 import logging
-import os
 import time
 from pathlib import Path
 
@@ -124,19 +123,14 @@ class Garage:
         Close the garage door after specified number of seconds.
         The close can be delayed by movement (last_pir is checked before close)
         """
-        if seconds <= self.close_warning:
-            if seconds < 60:
-                self.notify("closing garage in {} seconds!".format(seconds))
-            else:
-                self.notify("closing garage in {} minutes!".format(seconds / 60))
-        else:
-            # warn 5 minutes before close
+        if seconds > self.close_warning:
             await aio.sleep(seconds - self.close_warning)
             seconds = self.close_warning
-            if seconds < 60:
-                self.notify("closing garage in {} seconds!".format(seconds))
-            else:
-                self.notify("closing garage in {} minutes!".format(seconds / 60))
+
+        if seconds < 60:
+            self.notify("closing garage in {} seconds!".format(seconds))
+        else:
+            self.notify("closing garage in {} minutes!".format(seconds / 60))
 
         # wait for time to elapse
         await aio.sleep(seconds)
