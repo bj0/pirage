@@ -1,10 +1,10 @@
 import asyncio as aio
+from unittest.mock import MagicMock
 
 import pytest
 
-from unittest.mock import MagicMock
 from pirage.hardware import Monitor
-from .aiofastsleep import fastsleep
+
 
 @pytest.fixture(autouse=True)
 def gpio(monkeypatch):

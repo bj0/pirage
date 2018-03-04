@@ -137,7 +137,7 @@ class Monitor:
         if self._run_task is not None:
             self._run_task.cancel()
 
-        await aio.wait((self._run_task,))
+        await aio.wait((self._run_task,))  # todo ??
 
     async def run(self):
         """
@@ -150,16 +150,16 @@ class Monitor:
             # read current sensors
             state = self._read_sensors()
             if self._current.mag != state.mag or \
-                            self._current.pir != state.pir:
+                    self._current.pir != state.pir:
                 # something changed
                 self._current.pir = state.pir
                 self._current.mag = state.mag
                 self.publish(AttrDict(self._current))
 
             # pause
-            # yield from sleep(self.read_interval)
             await aio.sleep(self.read_interval)
 
+        # todo handle cancel
         # monitoring stopped
         self._current = AttrDict(mag=None, pir=None)
 

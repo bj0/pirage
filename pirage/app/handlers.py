@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 @aiohttp_jinja2.template('index.html')
 async def index(request):
     """
-    get the root index
+    get the root index (main page)
     :param request:
     :return:
     """
@@ -108,7 +108,6 @@ async def stream(request):
     return response
 
 
-# @app.route('/status')
 def get_status(request):
     """
     get current garage status

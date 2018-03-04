@@ -2,9 +2,9 @@ import asyncio as aio
 from unittest import mock
 
 import pytest
+
 from pirage.garage import Garage
 from pirage.util import AttrDict
-from .aiofastsleep import fancysleep, fastsleep
 
 
 @pytest.mark.asyncio
@@ -127,8 +127,8 @@ def test_data(monkeypatch):
 
     data = g.data
 
-    assert data.pir == False
-    assert data.mag == False
+    assert data.pir is False
+    assert data.mag is False
     assert data.last_pir == 10
     assert data.last_mag == 300
     assert data.last_pir_str == '10 sec'

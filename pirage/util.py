@@ -7,7 +7,6 @@ import tempfile
 from contextlib import contextmanager
 
 
-#@PendingDeprecationWarning
 def create_task(coro):
     """this should be DEPRECATED in 3.7, when this function will be added to asyncio"""
     return asyncio.get_event_loop().create_task(coro)
@@ -37,7 +36,6 @@ class AttrDict(dict):
     """
     dict subclass that adds attribute access for keys.
     """
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dict__ = self
