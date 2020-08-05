@@ -91,7 +91,7 @@ def create_app():
 
     # load saved state
     extra = app['garage'].load()
-    app['notify'] = extra.get('notify', True)
+    app['notify'] = extra.get('notify', True) # todo unit test loading (with no data)
 
     # update garage when hw monitor gets changes
     app['pi'].register(app['garage'].update)

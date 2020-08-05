@@ -1,0 +1,12 @@
+name: pirage
+version: git
+summary: Raspberry Pi Garage Controller App
+description: |
+  This is a web app that runs on a raspberry pi hooked to my garage.  It allows remote remote control, status, and
+  video monitoring of said garage.
+
+grade: devel
+confinement: devmode
+
+apps:
+  pirage:
