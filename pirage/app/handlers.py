@@ -1,12 +1,12 @@
+import io
 import json
 import logging
 import time
 
 import asks
 import trio
-from quart import Blueprint, render_template
-
 from pirage.hardware import read_temp, Hardware
+from quart import Blueprint, render_template, send_file
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,11 @@ async def camera(image):
     logger.info(f'camera: {image}')
     url = "http://10.10.10.137/image/jpeg.cgi"
     # url = "http://10.8.1.89/CGIProxy.fcgi?cmd=snapPicture2&usr=bdat&pwd=bdat&t="
-    return (await asks.get(url, auth=asks.BasicAuth(('admin', 'taco')))).content
+    # for some reason simply returning the raw data doesn't work anymore, so i have to wrap it in BytesIO and send_file it
+    # return Response((await asks.get(url, auth=asks.BasicAuth(('admin', 'taco')))).raw, mimetype="image/jpeg", content_type="image/jpeg")
+    return await send_file(
+        io.BytesIO(await asks.get(url, auth=asks.BasicAuth(('admin', 'taco'))).raw),
+        mimetype="image/jpeg")
 
 
 @bp.route('/stream')

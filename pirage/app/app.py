@@ -158,7 +158,7 @@ async def main(host: str = "0.0.0.0", port: int = 8245):
     async with trio.open_nursery() as nursery:
         # nursery.start_soon(poll_temp, app)
         # direct run for debugging
-        # nursery.start_soon(app.run_task)
+        # nursery.start_soon(app.run_task, host, port)
         # start hypercorn server in trio's loop
         nursery.start_soon(serve, app, config)
         # todo other stuff...
