@@ -1,10 +1,11 @@
-import argparse
 import logging.config
 
 import trio
-from quart_trio import QuartTrio
-
+from clii import App
+from hypercorn.config import Config
+from hypercorn.trio import serve
 from pirage import fcm
+from quart_trio import QuartTrio
 
 # configure logging
 config = {
@@ -57,6 +58,8 @@ config = {
 logging.config.dictConfig(config)
 
 logger = logging.getLogger(__name__)
+
+_cli = App()
 
 
 def create_app():
@@ -144,45 +147,61 @@ def do_fcm(data):
 #         await aio.sleep(5)
 
 
-app = create_app()
-
-
-async def amain():
+@_cli.main
+async def main(host: str = "0.0.0.0", port: int = 8245):
+    """
+    async entry point.
+    """
+    app = create_app()
+    config = Config()
+    config.bind = [f"{host}:{port}"]
     async with trio.open_nursery() as nursery:
         # nursery.start_soon(poll_temp, app)
-        nursery.start_soon(app.run_task)
+        # direct run for debugging
+        # nursery.start_soon(app.run_task)
+        # start hypercorn server in trio's loop
+        nursery.start_soon(serve, app, config)
         # todo other stuff...
 
 
-def main(**kwargs):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--port', type=int, help='server port',
-                        default=kwargs.get('port', 8245))
-    parser.add_argument('--host', help='server host',
-                        default=kwargs.get('host', '0.0.0.0'))
-    parser.add_argument('--no-pir', help='disable pir sensor',
-                        action='store_true',
-                        default=kwargs.get('no_pir', False))
-    parser.add_argument('--lock', help='disable auto closing garage',
-                        action='store_true',
-                        default=kwargs.get('lock', True))
-    parser.add_argument('--notify', help='push door change notifications',
-                        action='store_true',
-                        default=kwargs.get('no_notify', True))
-    args = parser.parse_args()
+def cli():
+    """synchronous entry point (run from terminal)"""
+    # run the clii entry point in trio's event loop
+    trio.run(_cli.run)
 
-    app['pi'].ignore_pir = args.no_pir
-    # app['garage'].lock(args.lock)
-    # app['notify'] = args.notify
-    try:
-        app.run(host=args.host, port=args.port)
-        # web.run_app(app, host=args.host, port=args.port)
-    finally:
-        # app['pi'].stop()
-        # app['garage'].save(notify=app['notify'])
-        app.run()
+
+# @cli.main
+# def main(**kwargs):
+#     trio.run(amain)
+# parser = argparse.ArgumentParser()
+# parser.add_argument('-p', '--port', type=int, help='server port',
+#                     default=kwargs.get('port', 8245))
+# parser.add_argument('--host', help='server host',
+#                     default=kwargs.get('host', '0.0.0.0'))
+# parser.add_argument('--no-pir', help='disable pir sensor',
+#                     action='store_true',
+#                     default=kwargs.get('no_pir', False))
+# parser.add_argument('--lock', help='disable auto closing garage',
+#                     action='store_true',
+#                     default=kwargs.get('lock', True))
+# parser.add_argument('--notify', help='push door change notifications',
+#                     action='store_true',
+#                     default=kwargs.get('no_notify', True))
+# args = parser.parse_args()
+#
+# # app['pi'].ignore_pir = args.no_pir
+# # app['garage'].lock(args.lock)
+# # app['notify'] = args.notify
+# try:
+#     app.run(host=args.host, port=args.port)
+#     # web.run_app(app, host=args.host, port=args.port)
+# finally:
+#     # app['pi'].stop()
+#     # app['garage'].save(notify=app['notify'])
+#     app.run()
 
 
 if __name__ == '__main__':
+    cli()
     # main()
-    trio.run(amain)
+    # trio.run(amain)

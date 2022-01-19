@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "pirage"
+version = "0.1.0"
+description = ""
+authors = ["Brian Parma <execrable@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+"RPi.GPIO" = "^0.7.0"
+pyfcm = "^1.4.7"
+quart-trio = "^0.5.1"
+asks = "^2.4.8"
+clii = "0.2.1"
+trio = "^0.16.0"
+
+[tool.poetry.dev-dependencies]
+pytest-trio = "^0.6.0"
+
+[tool.poetry.scripts]
+pirage = 'pirage.app.app:cli'
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
