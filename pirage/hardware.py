@@ -4,8 +4,8 @@ hardware.py
 
 Module for interfacing with Raspberry Pi Hardware.
 
-Monitor:
-    Monitor pins on the rpi for changes from a PIR sensors and a magnetic switch sensor.
+Hardware:
+    Read pins on the rpi for  a PIR sensors and a magnetic switch sensor.
 
 According to the spec, the PIR sensor's pin is HIGH when there is movement, else low.
  * HIGH when there is movement
@@ -37,18 +37,21 @@ The relay module needs to be HIGH at startup or it will activate (it activates w
 author:: Brian Parma <execrable@gmail.com>
 """
 
-import asyncio as aio
 import logging
+from dataclasses import dataclass
 
-from .util import AttrDict, create_task
+import trio
+from clii import App
 
 logger = logging.getLogger(__name__)
+
+cli = App()
 
 try:
     import RPi.GPIO as io
 
     _fake = False
-except ImportError:
+except (ImportError, RuntimeError):
     # mock GPIO for running on desktop
     logger.warning('no RPi.GPIO, mocking')
     from unittest.mock import MagicMock
@@ -63,6 +66,7 @@ except ImportError:
     io.input = MagicMock()
     io.input.side_effect = cycle((io.HIGH, io.LOW, io.HIGH, io.LOW, io.LOW))
     io.output = MagicMock()
+    # print on write
     io.output.side_effect = lambda *x: print('out:', *x)
 
 _pir_pin = 18
@@ -70,33 +74,21 @@ _mag_pin = 23
 _relay_pin = 24
 
 
-class Monitor:
+@dataclass
+class Sensors:
+    pir: bool
+    mag: bool
+
+
+class Hardware:
     """
-    Monitor the rpi sensors and report changes.
+    access to the rpi sensors.
 
-    *This should be a singleton*
-
-    Register callbacks to receive notifications::
-
-        m = Monitor()
-        m.register(callback)
-
-    Callbacks receive a dict of sensor data in the following format:
-
-        {
-            'mag':True      # mag switch is open
-            'pir':False     # pir sensor is inactive
-        }
-
+    *this should be a singleton*
     """
 
     def __init__(self):
-        self._callbacks = []
-        self._current = AttrDict(mag=None, pir=None)
-        self._run_task = None
         self._ignore_pir = False
-
-        self.read_interval = 2 if not _fake else 10  # 2 second, 10 if we are debugging to prevent spam
 
         # set number scheme
         io.setmode(io.BCM)
@@ -117,77 +109,10 @@ class Monitor:
     def ignore_pir(self, value):
         self._ignore_pir = value
 
-    def start(self):
-        """
-        Start monitoring sensors.  Returns the task containing the monitoring loop,
-        which does not complete until the monitor is stopped.
-        """
-        if self._run_task is None or not self._run_task.done():
-            self._run_task = create_task(self.run())
-
-        # return the task so it can be watched
-        return self._run_task
-
-    async def stop(self):
-        """
-        Stop monitoring sensors.  Awaits completion of the monitoring loop task.
-
-        This is a coroutine.
-        """
-        if self._run_task is not None:
-            self._run_task.cancel()
-
-        await aio.wait((self._run_task,))  # todo ??
-
-    async def run(self):
-        """
-        Read the sensors every interval and publish any changes.  Runs until canceled.
-
-        This is a coroutine
-        """
-
-        while True:
-            # read current sensors
-            state = self._read_sensors()
-            if self._current.mag != state.mag or \
-                    self._current.pir != state.pir:
-                # something changed
-                self._current.pir = state.pir
-                self._current.mag = state.mag
-                self.publish(AttrDict(self._current))
-
-            # pause
-            await aio.sleep(self.read_interval)
-
-        # todo handle cancel
-        # monitoring stopped
-        self._current = AttrDict(mag=None, pir=None)
-
-    def register(self, callback):
-        """
-        Register a callback to be called when a sensor changes.
-        """
-        self._callbacks.append(callback)
-
-    def unregister(self, callback):
-        """
-        Unregister a previously registered callback.
-        """
-        self._callbacks.remove(callback)
-
-    def publish(self, *args, **kwargs):
-        """
-        Call registered callbacks with specified args and kwargs.
-        """
-        for cb in self._callbacks:
-            cb(*args, **kwargs)
-
-    def _read_sensors(self):
-        state = AttrDict()
-        state.pir = io.input(_pir_pin) if not self.ignore_pir else 0
-        state.mag = io.input(_mag_pin)
-
-        return state
+    def read_sensors(self) -> Sensors:
+        return Sensors(
+            pir=io.input(_pir_pin) if not self.ignore_pir else 0,
+            mag=io.input(_mag_pin))
 
     @classmethod
     async def toggle_relay(cls):
@@ -197,48 +122,31 @@ class Monitor:
         This is a coroutine.
         """
         io.output(_relay_pin, io.LOW)
-        await aio.sleep(0.5)
+        await trio.sleep(0.5)
         io.output(_relay_pin, io.HIGH)
+
+
+@cli.cmd
+def read_temp():
+    with open('/sys/class/thermal/thermal_zone0/temp', 'rt') as f:
+        data = f.readline()
+        if data:
+            return float(data) / 1e3
+
+
+@cli.main
+async def main():
+    import sys
+    m = Hardware()
+
+    async with trio.lowlevel.FdStream(sys.stdin.fileno()) as stdin:
+        async for line in stdin:
+            if line.startswith(b'r'):
+                await m.toggle_relay()
+            elif line.startswith(b'q'):
+                break
 
 
 if __name__ == '__main__':
     # run stand alone to interactively test the hardware interaction
-
-    import sys
-
-    # this accepts input without blocking
-    loop = aio.get_event_loop()
-    q = aio.Queue()
-
-
-    def got_input():
-        create_task(q.put(sys.stdin.readline()))
-
-
-    loop.add_reader(sys.stdin, got_input)
-
-
-    async def prompt(msg):
-        print(msg)
-        return (await q.get()).rstrip('\n')
-
-
-    async def main():
-        m = Monitor()
-        # print on input change
-        m.register(lambda *x: print('pub:', *x))
-        m.start()
-
-        while True:
-            c = await prompt("enter q to quit, r to relay")
-            if c.startswith('r'):
-                await m.toggle_relay()
-            elif c.startswith('q'):
-                break
-
-        # gt.join()
-        await m.stop()
-
-
-    loop.run_until_complete(main())
-    loop.close()
+    trio.run(cli.run)

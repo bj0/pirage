@@ -1,11 +1,13 @@
-# manage garage state
+"""
+manage the state of the garage
+*not currently used or useful (sensors are broken)
+"""
 
-import asyncio as aio
 import logging
 import time
 from pathlib import Path
 
-from .util import shelf, AttrDict, create_task
+from pirage.util import shelf, AttrDict, create_task
 
 logger = logging.getLogger(__name__)
 

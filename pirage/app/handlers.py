@@ -1,150 +1,140 @@
-import asyncio as aio
 import json
 import logging
+import time
 
-import aiohttp
-import aiohttp_jinja2
-from aiohttp import web
-from aiohttp.web import json_response
+import asks
+import trio
+from quart import Blueprint, render_template
+
+from pirage.hardware import read_temp, Hardware
 
 logger = logging.getLogger(__name__)
 
+bp = Blueprint('app', __name__)
 
-@aiohttp_jinja2.template('index.html')
-async def index(request):
+pi = Hardware()
+
+
+@bp.route('/')
+async def index():
     """
     get the root index (main page)
-    :param request:
-    :return:
     """
-    return {}
+    return await render_template('index.html')
 
 
-def click(request):
+@bp.route('/click', methods=['POST'])
+async def click():
     """
     toggles the garage door
-    :param request:
-    :return:
     """
     logger.info('click')
-    request.app['garage'].toggle_door()
-    return web.Response()
+    await pi.toggle_relay()
+    return '', 204
 
 
-async def lock(request):
-    """
-    set garage door lock
-    :param request:
-    :return:
-    """
-    locked = (await request.json())['locked']
-    logger.info(f'set lock: {locked}')
-    g = request.app['garage']
-    g.lock(locked)
-    return json_response(dict(locked=g.locked))
+# @bp.route('/set_lock')
+# async def lock(request):
+#     """
+#     set garage door lock
+#     :param request:
+#     :return:
+#     """
+#     locked = (await request.json())['locked']
+#     logger.info(f'set lock: {locked}')
+#     # g = request.app['garage']
+#     # g.lock(locked)
+#     return dict(locked=g.locked)
 
 
-async def set_pir(request):
-    """
-    set pir sensor on/off
-    :param request:
-    :return:
-    """
-    pir = (await request.json())['enabled']
-    logger.info(f'set pir: {pir}')
-    pi = request.app['pi']
-    pi.ignore_pir = not pir
-    return json_response(dict(pir_enabled=not pi.ignore_pir))
+# @bp.route('/set_pir')
+# async def set_pir(request):
+#     """
+#     set pir sensor on/off
+#     :param request:
+#     :return:
+#     """
+#     pir = (await request.json())['enabled']
+#     logger.info(f'set pir: {pir}')
+#     pi = request.app['pi']
+#     pi.ignore_pir = not pir
+#     return dict(pir_enabled=not pi.ignore_pir)
 
 
-async def set_notify(request):
-    """
-    set notification pushing on/off
-    :param request:
-    :return:
-    """
-    notify = (await request.json())['enabled']
-    logger.info(f'set notify: {notify}')
-    request.app['notify'] = notify
-    return json_response(dict(notify_enabled=notify))
+# @bp.route('/set_notify')
+# async def set_notify(request):
+#     """
+#     set notification pushing on/off
+#     :param request:
+#     :return:
+#     """
+#     notify = (await request.json())['enabled']
+#     logger.info(f'set notify: {notify}')
+#     request.app['notify'] = notify
+#     return dict(notify_enabled=notify)
 
 
-async def camera(request):
+@bp.route('/cam/<image>')
+async def camera(image):
     """
     pull camera image from garage and return it
     """
-    logger.info(f'camera: {request}')
-    url = "http://admin:taco@10.10.10.201/image/jpeg.cgi"
+    logger.info(f'camera: {image}')
+    url = "http://10.10.10.137/image/jpeg.cgi"
     # url = "http://10.8.1.89/CGIProxy.fcgi?cmd=snapPicture2&usr=bdat&pwd=bdat&t="
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            return web.Response(body=await response.read())
+    return (await asks.get(url, auth=asks.BasicAuth(('admin', 'taco')))).content
 
 
-async def stream(request):
+@bp.route('/stream')
+async def stream():
     """
     get a SSE session for live status updates
     :param request:
     :return:
     """
-    response = web.StreamResponse(headers={
+
+    async def send_events():
+        yield b'retry: 10000\n\n'
+        while True:
+            data = _pack()
+            yield f'data: {json.dumps(data)}\n\n'.encode('utf-8')
+            await trio.sleep(3)
+
+    return send_events(), {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-    })
-
-    await response.prepare(request)
-
-    logger.info('add stream client (%s)', len(request.app['clients']) + 1)
-    q = aio.Queue()
-    request.app['clients'].append(q)
-    try:
-        async for data in _get_aiter(q):
-            await response.write(data)
-    finally:
-        logger.info('remove stream client (%s)', len(request.app['clients']) - 1)
-        request.app['clients'].remove(q)
-
-    return response
+        'Transfer-Encoding': 'chunked',
+    }
 
 
-def get_status(request):
+@bp.route('/status')
+def get_status():
     """
     get current garage status
     :param request:
     :return:
     """
     logger.info('status')
-    return json_response(_pack(request.app))
+    return _pack()
 
 
-async def _get_aiter(q):
-    """
-    Turn an asyncio.Queue into an EventStream async iterator
-    """
-    yield b'retry: 10000\n\n'
-    while True:
-        data = await q.get()
-        if data == 'nan':
-            break
-        yield b'data: %b\n\n' % json.dumps(data).encode()
-
-
-def _pack(app):
+def _pack():
     """
     Pack app/garage data into a dict
     """
-    data = app['garage'].data
+    sensors = pi.read_sensors()
+    temp = read_temp()
     return {
         'times': {
-            'now': data.now,
-            'last_pir': data.last_pir_str,
-            'last_mag': data.last_mag_str
+            'now': time.time(),
+            'last_pir': "?",
+            'last_mag': "?"
         },
-        'pir': data.pir,
-        'mag': data.mag,
-        'temp': app['cpu_temp'],
-        'locked': app['garage'].locked,
-        'pir_enabled': not app['pi'].ignore_pir,
-        'notify_enabled': app['notify']
+        'pir': sensors.pir,
+        'mag': sensors.mag,
+        'temp': temp,
+        'locked': False,
+        'pir_enabled': not pi.ignore_pir,
+        'notify_enabled': False
     }

@@ -1,17 +1,10 @@
 import argparse
-import asyncio as aio
 import logging.config
-from pathlib import Path
 
-import aiohttp_jinja2
-import jinja2
-from aiohttp import web
+import trio
+from quart_trio import QuartTrio
 
 from pirage import fcm
-from pirage.garage import Garage
-from pirage.hardware import Monitor
-from pirage.util import AttrDict, create_task
-from . import handlers
 
 # configure logging
 config = {
@@ -38,7 +31,7 @@ config = {
         },
         'webfile': {
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/tmp/pirage.aiohttp.log',
+            'filename': '/tmp/pirage.web.log',
             'mode': 'ab',
             'backupCount': 3,
             'maxBytes': 1024 * 100,
@@ -47,11 +40,15 @@ config = {
         }
     },
     'loggers': {
+        '*': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
         'pirage': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
         },
-        'aiohttp': {
+        '': {
             'handlers': ['webfile'],
             'level': 'DEBUG'
         }
@@ -63,134 +60,98 @@ logger = logging.getLogger(__name__)
 
 
 def create_app():
-    app = web.Application()
+    app = QuartTrio(__name__)
 
-    app.router.add_get('/', handlers.index)
-    app.router.add_post('/click', handlers.click)
-    app.router.add_post('/set_lock', handlers.lock)
-    app.router.add_post('/set_pir', handlers.set_pir)
-    app.router.add_post('/set_notify', handlers.set_notify)
-    app.router.add_get('/stream', handlers.stream)
-    app.router.add_get('/status', handlers.get_status)
-    app.router.add_get('/cam/{type}', handlers.camera)
-    app.router.add_static('/static/', str(Path(__file__) / '../../static'),
-                          name='static')
+    from pirage.app.handlers import bp
+    app.register_blueprint(bp)
 
-    aiohttp_jinja2.setup(app,
-                         loader=jinja2.PackageLoader('pirage.app', 'templates'))
-
-    app['cpu_temp'] = 0
-    app['last_push'] = None
-    app['clients'] = []
+    # app['cpu_temp'] = 0
+    # app['last_push'] = None
+    # app['clients'] = []
 
     # create hw monitor
-    app['pi'] = Monitor()
+    # app['pi'] = Hardware()
 
     # create garage monitor that uses hw monitor to close garage
-    app['garage'] = Garage(lambda *x: create_task(app['pi'].toggle_relay()))
+    # app['garage'] = Garage(lambda *x: create_task(app['pi'].toggle_relay()))
 
     # load saved state
-    extra = app['garage'].load()
-    app['notify'] = extra.get('notify', True) # todo unit test loading (with no data)
+    # extra = app['garage'].load()
+    # app['notify'] = extra.get('notify', True)  # todo unit test loading (with no data)
 
     # update garage when hw monitor gets changes
-    app['pi'].register(app['garage'].update)
+    # app['pi'].register(app['garage'].update)
 
     # update page when hw monitor gets changes
-    app['pi'].register(lambda *x: create_task(gen_data(app)))
+    # app['pi'].register(lambda *x: create_task(gen_data(app)))
 
     # start hardware
-    app['pi'].start()
-
-    # periodically update page
-    create_task(poll(app))
-    # periodically get cpu temperature
-    create_task(poll_temp())
+    # app['pi'].start()
 
     return app
 
 
-async def poll_temp():
-    """periodically read processor temperature from /sys/class/thermal"""
-    while True:
-        try:
-            with open('/sys/class/thermal/thermal_zone0/temp', 'rt') as f:
-                data = f.readline()
-                if data:
-                    app['cpu_temp'] = float(data) / 1e3
-                    logger.debug(f'cpu temp: {app["cpu_temp"]}')
-        except Exception as e:
-            logger.warning('cannot get cpu temp: %s', e)
-
-        await aio.sleep(30)
+# def push_data(data):
+#     """
+#     Push a set of data to listening clients, concurrently.
+#     """
+#     for q in list(app['clients']):
+#         create_task(q.put(data))
 
 
-def push_data(data):
-    """
-    Push a set of data to listening clients, concurrently.
-    """
-    for q in list(app['clients']):
-        create_task(q.put(data))
+# async def gen_data(app):
+#     """
+#     Pack data and push to clients.  Send notification if door state changes.
+#     """
+#     data = handlers._pack(app)
+#     push_data(data)
+#
+#     # notify on door change
+#     logger.debug('last: %s, new: %s', app['last_push'], app['garage'].door_open)
+#     if app['last_push'] != app['garage'].door_open:
+#         logger.info("garage changed, %s notification!", "sending" if app['notify'] else "not sending")
+#         if app['notify']:
+#             do_fcm(data)
+#         app['last_push'] = app['garage'].door_open
 
-
-async def gen_data(app):
-    """
-    Pack data and push to clients.  Send notification if door state changes.
-    """
-    data = handlers._pack(app)
-    push_data(data)
-
-    # notify on door change
-    logger.debug('last: %s, new: %s', app['last_push'], app['garage'].door_open)
-    if app['last_push'] != app['garage'].door_open:
-        logger.info("garage changed, %s notification!", "sending" if app['notify'] else "not sending")
-        if app['notify']:
-            do_fcm(data)
-        app['last_push'] = app['garage'].door_open
-
-
-# def do_mqtt(door_open):
-#     try:
-#         print("mqtt: {}", door_open)
-#         mqtt.report("pirage/door", door_open)
-#     except Exception as e:
-#         print("error mqtting: {}", e)
-
-
-# def do_dweet(data):
-#     logging.info('dweeting %r', data)
-#     dweet.report('dat-pi-thang', 'secret-garden-k3y', data)
 
 def do_fcm(data):
     logger.info('sending fcm: %s', data)
     fcm.report('pirage', data)
 
 
-async def poll(app):
-    """
-    Periodically update page data.
-    """
-    while True:
-        await gen_data(app)
-        await aio.sleep(5)
+# async def poll(app):
+#     """
+#     Periodically update page data.
+#     """
+#     while True:
+#         await gen_data(app)
+#         await aio.sleep(5)
 
 
-async def gen_fake():
-    """generate fake data"""
-    import random
-    while True:
-        push_data(AttrDict(
-            last_pir=random.randint(1, 25),
-            last_mag=random.randint(1, 7),
-            pir=False,
-            mag=True,
-            locked=False,
-            pir_enabled=True,
-            notify_enabled=False))
-        await aio.sleep(5)
+# async def gen_fake():
+#     """generate fake data"""
+#     import random
+#     while True:
+#         push_data(AttrDict(
+#             last_pir=random.randint(1, 25),
+#             last_mag=random.randint(1, 7),
+#             pir=False,
+#             mag=True,
+#             locked=False,
+#             pir_enabled=True,
+#             notify_enabled=False))
+#         await aio.sleep(5)
 
 
 app = create_app()
+
+
+async def amain():
+    async with trio.open_nursery() as nursery:
+        # nursery.start_soon(poll_temp, app)
+        nursery.start_soon(app.run_task)
+        # todo other stuff...
 
 
 def main(**kwargs):
@@ -204,21 +165,24 @@ def main(**kwargs):
                         default=kwargs.get('no_pir', False))
     parser.add_argument('--lock', help='disable auto closing garage',
                         action='store_true',
-                        default=kwargs.get('lock', False))
+                        default=kwargs.get('lock', True))
     parser.add_argument('--notify', help='push door change notifications',
                         action='store_true',
                         default=kwargs.get('no_notify', True))
     args = parser.parse_args()
 
     app['pi'].ignore_pir = args.no_pir
-    app['garage'].lock(args.lock)
-    app['notify'] = args.notify
+    # app['garage'].lock(args.lock)
+    # app['notify'] = args.notify
     try:
-        web.run_app(app, host=args.host, port=args.port)
+        app.run(host=args.host, port=args.port)
+        # web.run_app(app, host=args.host, port=args.port)
     finally:
-        app['pi'].stop()
-        app['garage'].save(notify=app['notify'])
+        # app['pi'].stop()
+        # app['garage'].save(notify=app['notify'])
+        app.run()
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    trio.run(amain)
