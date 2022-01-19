@@ -3,6 +3,7 @@ Raspberry Pi Garage Controller
 
 ## TODO
 
+note: rpi.gpio might fail to build with pip without CFLAGS="-fcommon"
 
 ### Create Self-Signed Certs
 

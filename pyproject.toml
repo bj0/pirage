@@ -5,10 +5,10 @@ description = ""
 authors = ["Brian Parma <execrable@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "~3.9"
 "RPi.GPIO" = "^0.7.0"
 pyfcm = "^1.4.7"
-quart-trio = "^0.5.1"
+quart-trio = "^0.9.1"
 asks = "^2.4.8"
 clii = "0.2.1"
 trio = "^0.16.0"
