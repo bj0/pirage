@@ -85,7 +85,7 @@ async def camera(image):
     # for some reason simply returning the raw data doesn't work anymore, so i have to wrap it in BytesIO and send_file it
     # return Response((await asks.get(url, auth=asks.BasicAuth(('admin', 'taco')))).raw, mimetype="image/jpeg", content_type="image/jpeg")
     return await send_file(
-        io.BytesIO(await asks.get(url, auth=asks.BasicAuth(('admin', 'taco'))).raw),
+        io.BytesIO((await asks.get(url, auth=asks.BasicAuth(('admin', 'taco')))).raw),
         mimetype="image/jpeg")
 
 
